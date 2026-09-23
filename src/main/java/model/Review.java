@@ -1,6 +1,8 @@
 package model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 @Entity
 @Table(name = "review")
@@ -10,6 +12,8 @@ public class Review {
     private String reviewId;
 
     @Column(name = "rating")
+    @Min(1)
+    @Max(5)
     private int rating;
 
     @Column(name = "comment")

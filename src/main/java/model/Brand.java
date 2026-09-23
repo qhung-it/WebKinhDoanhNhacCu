@@ -2,6 +2,9 @@ package model;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "brand")
 public class Brand {
@@ -16,7 +19,7 @@ public class Brand {
     private String description;
 
     @OneToMany(mappedBy = "brand", fetch = FetchType.LAZY)
-    private Product product;
+    private List<Product> products = new ArrayList<>();
 
     public String getBrandId() {
         return brandId;
@@ -42,11 +45,11 @@ public class Brand {
         this.description = description;
     }
 
-    public Product getProduct() {
-        return product;
+    public List<Product> getProducts() {
+        return products;
     }
 
-    public void setProduct(Product product) {
-        this.product = product;
+    public void setProducts(List<Product> products) {
+        this.products = products;
     }
 }

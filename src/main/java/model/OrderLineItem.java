@@ -2,9 +2,15 @@ package model;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "order_line_item")
 public class OrderLineItem {
+    @Id
+    @Column(name = "order_line_item_id")
+    private String orderLineItemId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
     private Product product;
@@ -13,7 +19,7 @@ public class OrderLineItem {
     private int quantity;
 
     @Column(name = "unit_price")
-    private double unitPrice;
+    private BigDecimal unitPrice;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
@@ -35,11 +41,19 @@ public class OrderLineItem {
         this.quantity = quantity;
     }
 
-    public double getUnitPrice() {
+    public String getOrderLineItemId() {
+        return orderLineItemId;
+    }
+
+    public void setOrderLineItemId(String orderLineItemId) {
+        this.orderLineItemId = orderLineItemId;
+    }
+
+    public BigDecimal getUnitPrice() {
         return unitPrice;
     }
 
-    public void setUnitPrice(double unitPrice) {
+    public void setUnitPrice(BigDecimal unitPrice) {
         this.unitPrice = unitPrice;
     }
 

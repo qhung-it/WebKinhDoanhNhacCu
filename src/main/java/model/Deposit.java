@@ -2,6 +2,7 @@ package model;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -12,7 +13,7 @@ public class Deposit {
     private String depositId;
 
     @Column(name = "amount")
-    private double amount;
+    private BigDecimal amount;
 
     @Column(name = "deposit_date")
     private LocalDateTime depositDate;
@@ -22,7 +23,7 @@ public class Deposit {
     private DepositStatus depositStatus = DepositStatus.PENDING;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id")
+    @JoinColumn(name = "order_id", nullable = false, unique = true)
     private Order order;
 
     public String getDepositId() {
@@ -33,11 +34,11 @@ public class Deposit {
         this.depositId = depositId;
     }
 
-    public double getAmount() {
+    public BigDecimal getAmount() {
         return amount;
     }
 
-    public void setAmount(double amount) {
+    public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
 

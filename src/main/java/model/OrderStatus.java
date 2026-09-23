@@ -2,6 +2,9 @@ package model;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "order_status")
 public class OrderStatus {
@@ -16,7 +19,7 @@ public class OrderStatus {
     private String description;
 
     @OneToMany(mappedBy = "orderStatus", fetch = FetchType.LAZY)
-    private Order order;
+    private List<Order> orders = new ArrayList<>();
 
     public String getStatusId() {
         return statusId;
@@ -42,11 +45,11 @@ public class OrderStatus {
         this.description = description;
     }
 
-    public Order getOrder() {
-        return order;
+    public List<Order> getOrders() {
+        return orders;
     }
 
-    public void setOrder(Order order) {
-        this.order = order;
+    public void setOrders(List<Order> orders) {
+        this.orders = orders;
     }
 }
