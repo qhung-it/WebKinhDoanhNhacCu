@@ -1,6 +1,8 @@
-package model;
+package model.entity;
 
 import jakarta.persistence.*;
+import model.PaymentMethod;
+import model.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

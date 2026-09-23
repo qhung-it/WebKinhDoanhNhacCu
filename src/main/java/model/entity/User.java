@@ -1,6 +1,7 @@
-package model;
+package model.entity;
 
 import jakarta.persistence.*;
+import model.Role;
 
 import java.util.ArrayList;
 import java.util.List;

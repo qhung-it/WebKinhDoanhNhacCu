@@ -1,6 +1,7 @@
-package model;
+package model.entity;
 
 import jakarta.persistence.*;
+import model.DepositStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
