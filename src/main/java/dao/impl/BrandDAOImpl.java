@@ -44,4 +44,17 @@ public class BrandDAOImpl extends BaseDAOImpl<Brand, String> implements BrandDAO
             em.close();
         }
     }
+
+    @Override
+    public long countProducts(String brandId) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(p) FROM Product p WHERE p.brand.brandId = :brandId", Long.class);
+            query.setParameter("brandId", brandId);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
 }

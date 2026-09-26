@@ -15,4 +15,7 @@ public interface CategoryDAO extends BaseDAO<Category, String> {
 
     /** Lấy danh sách danh mục đang hoạt động (status = true) hoặc tạm ngưng (status = false). */
     List<Category> findByStatus(boolean status);
+
+    /** Thống kê: đếm số lượng sản phẩm thuộc một danh mục. */
+    long countProducts(String categoryId);
 }

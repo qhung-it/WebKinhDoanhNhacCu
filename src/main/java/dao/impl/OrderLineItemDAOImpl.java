@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import model.entity.OrderLineItem;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -51,6 +52,34 @@ public class OrderLineItemDAOImpl extends BaseDAOImpl<OrderLineItem, String> imp
                             "WHERE oi.product.productId = :productId", Long.class);
             query.setParameter("productId", productId);
             return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public BigDecimal sumRevenueByProduct(String productId) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<BigDecimal> query = em.createQuery(
+                    "SELECT COALESCE(SUM(oi.quantity * oi.unitPrice), 0) FROM OrderLineItem oi " +
+                            "WHERE oi.product.productId = :productId", BigDecimal.class);
+            query.setParameter("productId", productId);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public List<Object[]> findTopSellingProducts(int limit) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Object[]> query = em.createQuery(
+                    "SELECT oi.product, SUM(oi.quantity) AS totalSold FROM OrderLineItem oi " +
+                            "GROUP BY oi.product ORDER BY totalSold DESC", Object[].class);
+            query.setMaxResults(limit);
+            return query.getResultList();
         } finally {
             em.close();
         }

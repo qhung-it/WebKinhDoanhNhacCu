@@ -59,4 +59,17 @@ public class CustomerRankDAOImpl extends BaseDAOImpl<CustomerRank, String> imple
             em.close();
         }
     }
+
+    @Override
+    public long countUsersByRank(String rankId) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(u) FROM User u WHERE u.customerRank.rankId = :rankId", Long.class);
+            query.setParameter("rankId", rankId);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
 }

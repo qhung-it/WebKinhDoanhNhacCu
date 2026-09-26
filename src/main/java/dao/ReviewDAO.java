@@ -21,4 +21,10 @@ public interface ReviewDAO extends BaseDAO<Review, String> {
 
     /** Tính điểm đánh giá trung bình (rating) của một sản phẩm. */
     Double findAverageRatingByProduct(String productId);
+
+    /** Thống kê: tổng số đánh giá của một sản phẩm. */
+    long countByProduct(String productId);
+
+    /** Thống kê: đếm số lượng đánh giá theo từng mức sao (1-5) của một sản phẩm (dùng để vẽ biểu đồ phân bố). */
+    long countByProductAndRating(String productId, int rating);
 }

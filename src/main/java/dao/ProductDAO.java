@@ -41,4 +41,16 @@ public interface ProductDAO extends BaseDAO<Product, String> {
      * Trả về true nếu cập nhật thành công, false nếu không đủ tồn kho hoặc không tìm thấy sản phẩm.
      */
     boolean adjustStock(String productId, int delta);
+
+    /** Thống kê: tổng số sản phẩm hiện có trong hệ thống. */
+    long countAll();
+
+    /** Thống kê: đếm số lượng sản phẩm thuộc một danh mục. */
+    long countByCategory(String categoryId);
+
+    /** Thống kê: đếm số lượng sản phẩm thuộc một thương hiệu. */
+    long countByBrand(String brandId);
+
+    /** Thống kê: đếm số lượng sản phẩm theo trạng thái (ví dụ: "ACTIVE", "HIDDEN", ...). */
+    long countByStatus(String status);
 }

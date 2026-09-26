@@ -66,4 +66,29 @@ public class UserDAOImpl extends BaseDAOImpl<User, String> implements UserDAO {
             em.close();
         }
     }
+
+    @Override
+    public long countAll() {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(u) FROM User u", Long.class);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public long countByRole(Role role) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(u) FROM User u WHERE u.role = :role", Long.class);
+            query.setParameter("role", role);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
 }

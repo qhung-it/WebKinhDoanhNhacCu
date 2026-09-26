@@ -68,4 +68,32 @@ public class ReviewDAOImpl extends BaseDAOImpl<Review, String> implements Review
             em.close();
         }
     }
+
+    @Override
+    public long countByProduct(String productId) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(r) FROM Review r WHERE r.product.productId = :productId", Long.class);
+            query.setParameter("productId", productId);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public long countByProductAndRating(String productId, int rating) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(r) FROM Review r WHERE r.product.productId = :productId " +
+                            "AND r.rating = :rating", Long.class);
+            query.setParameter("productId", productId);
+            query.setParameter("rating", rating);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
 }

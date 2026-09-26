@@ -133,4 +133,55 @@ public class ProductDAOImpl extends BaseDAOImpl<Product, String> implements Prod
             em.close();
         }
     }
+
+    @Override
+    public long countAll() {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(p) FROM Product p", Long.class);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public long countByCategory(String categoryId) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(p) FROM Product p WHERE p.category.categoryId = :categoryId", Long.class);
+            query.setParameter("categoryId", categoryId);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public long countByBrand(String brandId) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(p) FROM Product p WHERE p.brand.brandId = :brandId", Long.class);
+            query.setParameter("brandId", brandId);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public long countByStatus(String status) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(p) FROM Product p WHERE p.status = :status", Long.class);
+            query.setParameter("status", status);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
 }

@@ -29,7 +29,4 @@ public interface BaseDAO<T, ID> {
 
     /** Xóa một Entity theo khóa chính. Trả về true nếu xóa thành công. */
     boolean deleteById(ID id);
-
-    /** Đếm tổng số bản ghi hiện có. */
-    long count();
 }

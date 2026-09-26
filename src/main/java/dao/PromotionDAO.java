@@ -22,4 +22,7 @@ public interface PromotionDAO extends BaseDAO<Promotion, String> {
 
     /** Tìm khuyến mãi theo tên. */
     List<Promotion> searchByName(String keyword);
+
+    /** Thống kê: đếm số lượng khuyến mãi đang diễn ra tại thời điểm hiện tại. */
+    long countActivePromotions(LocalDateTime now);
 }

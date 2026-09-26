@@ -7,6 +7,9 @@ import jakarta.persistence.TypedQuery;
 import model.DepositStatus;
 import model.entity.Deposit;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 /**
  * Triển khai (implement) DepositDAO.
  */
@@ -47,6 +50,35 @@ public class DepositDAOImpl extends BaseDAOImpl<Deposit, String> implements Depo
         } catch (RuntimeException e) {
             rollback(em);
             throw e;
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public long countByStatus(DepositStatus status) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(d) FROM Deposit d WHERE d.depositStatus = :status", Long.class);
+            query.setParameter("status", status);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public BigDecimal sumAmountByDateRange(LocalDateTime from, LocalDateTime to) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<BigDecimal> query = em.createQuery(
+                    "SELECT COALESCE(SUM(d.amount), 0) FROM Deposit d " +
+                            "WHERE d.depositStatus = model.DepositStatus.COMPLETED " +
+                            "AND d.depositDate BETWEEN :from AND :to", BigDecimal.class);
+            query.setParameter("from", from);
+            query.setParameter("to", to);
+            return query.getSingleResult();
         } finally {
             em.close();
         }

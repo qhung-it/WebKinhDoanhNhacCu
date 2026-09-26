@@ -76,4 +76,18 @@ public class PromotionDAOImpl extends BaseDAOImpl<Promotion, String> implements 
             em.close();
         }
     }
+
+    @Override
+    public long countActivePromotions(LocalDateTime now) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(p) FROM Promotion p WHERE p.startDateTime <= :now AND p.endDateTime >= :now",
+                    Long.class);
+            query.setParameter("now", now);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
 }

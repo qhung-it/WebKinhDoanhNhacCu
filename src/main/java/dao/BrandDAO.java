@@ -15,4 +15,7 @@ public interface BrandDAO extends BaseDAO<Brand, String> {
 
     /** Tìm các thương hiệu có tên chứa từ khóa (tìm kiếm gần đúng). */
     List<Brand> searchByName(String keyword);
+
+    /** Thống kê: đếm số lượng sản phẩm thuộc một thương hiệu. */
+    long countProducts(String brandId);
 }

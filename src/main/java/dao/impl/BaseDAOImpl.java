@@ -117,18 +117,6 @@ public abstract class BaseDAOImpl<T, ID> implements BaseDAO<T, ID> {
         }
     }
 
-    @Override
-    public long count() {
-        EntityManager em = getEmf().createEntityManager();
-        try {
-            TypedQuery<Long> query = em.createQuery(
-                    "SELECT COUNT(e) FROM " + entityClass.getSimpleName() + " e", Long.class);
-            return query.getSingleResult();
-        } finally {
-            em.close();
-        }
-    }
-
     protected void rollback(EntityManager em) {
         if (em.getTransaction().isActive()) {
             em.getTransaction().rollback();

@@ -44,4 +44,17 @@ public class CategoryDAOImpl extends BaseDAOImpl<Category, String> implements Ca
             em.close();
         }
     }
+
+    @Override
+    public long countProducts(String categoryId) {
+        EntityManager em = getEmf().createEntityManager();
+        try {
+            TypedQuery<Long> query = em.createQuery(
+                    "SELECT COUNT(p) FROM Product p WHERE p.category.categoryId = :categoryId", Long.class);
+            query.setParameter("categoryId", categoryId);
+            return query.getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
 }

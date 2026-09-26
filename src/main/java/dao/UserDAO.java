@@ -22,4 +22,10 @@ public interface UserDAO extends BaseDAO<User, String> {
 
     /** Kiểm tra thông tin đăng nhập (email + mật khẩu). */
     User login(String email, String password);
+
+    /** Thống kê: tổng số User hiện có trong hệ thống. */
+    long countAll();
+
+    /** Thống kê: đếm số lượng User theo vai trò (USER/ADMIN). */
+    long countByRole(Role role);
 }

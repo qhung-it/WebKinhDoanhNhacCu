@@ -22,4 +22,7 @@ public interface CustomerRankDAO extends BaseDAO<CustomerRank, String> {
 
     /** Lấy danh sách hạng khách hàng sắp xếp theo mức chi tiêu tối thiểu tăng dần. */
     List<CustomerRank> findAllOrderByMinSpending();
+
+    /** Thống kê: đếm số lượng khách hàng (User) đang thuộc một hạng cụ thể. */
+    long countUsersByRank(String rankId);
 }
