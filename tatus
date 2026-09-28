@@ -1,0 +1,23 @@
+[33mcommit 975093be6efe4a886174268abe36bf58cd74bf1d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Hoang Le <levanhoang842006@gmail.com>
+Date:   Fri Sep 25 22:07:53 2026 +0700
+
+    Update DAO classes
+
+[33mcommit c2f546e0a6b5d57275235cede103f70b6f061d50[m
+Author: Le Quang Hung <lqh246@gmail.com>
+Date:   Wed Sep 23 12:15:25 2026 +0700
+
+    gom gon cac entity vao 1 package
+
+[33mcommit c0cb1238dc3b8eaaa106b99917d4d033e72d064a[m
+Author: Le Quang Hung <lqh246@gmail.com>
+Date:   Wed Sep 23 10:42:05 2026 +0700
+
+    ket noi sql server thanh cong
+
+[33mcommit 9cf3115cbafc90561a5afe8700fb623f09a139d1[m
+Author: Le Quang Hung <lqh246@gmail.com>
+Date:   Wed Sep 23 07:42:00 2026 +0700
+
+    da tao xong model bang cach anh xa hibernate, chua check, chua cau hinh connection pool
