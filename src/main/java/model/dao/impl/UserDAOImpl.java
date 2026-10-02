@@ -1,21 +1,22 @@
 package model.dao.impl;
 
 import jakarta.persistence.EntityManager;
-import model.dao.intf.ReviewDAO;
-import model.entity.Review;
+import model.Role;
+import model.dao.intf.UserDAO;
+import model.entity.User;
 import model.util.JpaUtil;
 
 import java.util.List;
 
-public class ReviewDAOImpl implements ReviewDAO {
+public class UserDAOImpl implements UserDAO {
 
     @Override
-    public boolean save(Review review) {
+    public boolean save(User user) {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
             em.getTransaction().begin();
-            em.persist(review);
+            em.persist(user);
             em.getTransaction().commit();
             return true;
         } catch (Exception e) {
@@ -30,12 +31,12 @@ public class ReviewDAOImpl implements ReviewDAO {
     }
 
     @Override
-    public boolean update(Review review) {
+    public boolean update(User user) {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
             em.getTransaction().begin();
-            em.merge(review);
+            em.merge(user);
             em.getTransaction().commit();
             return true;
         } catch (Exception e) {
@@ -50,20 +51,20 @@ public class ReviewDAOImpl implements ReviewDAO {
     }
 
     @Override
-    public boolean delete(String reviewId) {
+    public boolean delete(String userId) {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
             em.getTransaction().begin();
 
-            Review review = em.find(Review.class, reviewId);
+            User user = em.find(User.class, userId);
 
-            if (review == null) {
+            if (user == null) {
                 em.getTransaction().rollback();
                 return false;
             }
 
-            em.remove(review);
+            em.remove(user);
             em.getTransaction().commit();
 
             return true;
@@ -79,26 +80,56 @@ public class ReviewDAOImpl implements ReviewDAO {
     }
 
     @Override
-    public Review findById(String reviewId) {
+    public User findById(String userId) {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
-            return em.find(Review.class, reviewId);
+            return em.find(User.class, userId);
         } finally {
             em.close();
         }
     }
 
     @Override
-    public List<Review> findByProductId(String productId) {
+    public User findByEmail(String email) {
+        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+
+        try {
+            List<User> users = em.createQuery(
+                            "SELECT u FROM User u WHERE u.email = :email",
+                            User.class
+                    ).setParameter("email", email)
+                    .getResultList();
+
+            return users.isEmpty() ? null : users.get(0);
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public List<User> findAll() {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
             return em.createQuery(
-                            "SELECT r FROM Review r " +
-                                    "WHERE r.product.productId = :productId",
-                            Review.class
-                    ).setParameter("productId", productId)
+                    "SELECT u FROM User u",
+                    User.class
+            ).getResultList();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public List<User> findByRole(Role role) {
+        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+
+        try {
+            return em.createQuery(
+                            "SELECT u FROM User u WHERE u.role = :role",
+                            User.class
+                    ).setParameter("role", role)
                     .getResultList();
         } finally {
             em.close();
@@ -106,30 +137,34 @@ public class ReviewDAOImpl implements ReviewDAO {
     }
 
     @Override
-    public List<Review> findByUserId(String userId) {
+    public List<User> findByCustomerRankId(String rankId) {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
             return em.createQuery(
-                            "SELECT r FROM Review r " +
-                                    "WHERE r.user.userId = :userId",
-                            Review.class
+                            "SELECT u FROM User u " +
+                                    "WHERE u.customerRank.rankId = :rankId",
+                            User.class
+                    ).setParameter("rankId", rankId)
+                    .getResultList();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public List<User> findByOrderHistory(String userId) {
+        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+
+        try {
+            return em.createQuery(
+                            "SELECT u FROM User u " +
+                                    "JOIN u.orders o " +
+                                    "WHERE u.userId = :userId " +
+                                    "ORDER BY o.orderDate DESC",
+                            User.class
                     ).setParameter("userId", userId)
                     .getResultList();
-        } finally {
-            em.close();
-        }
-    }
-
-    @Override
-    public List<Review> findAll() {
-        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
-
-        try {
-            return em.createQuery(
-                    "SELECT r FROM Review r",
-                    Review.class
-            ).getResultList();
         } finally {
             em.close();
         }

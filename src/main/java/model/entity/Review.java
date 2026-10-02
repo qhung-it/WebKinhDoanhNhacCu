@@ -78,13 +78,4 @@ public class Review {
     public void setOrder(Order order) {
         this.order = order;
     }
-
-    public void updateReview(int rating, String comment) {
-        if (rating < 1 || rating > 5) {
-            throw new IllegalArgumentException("Rating phải nằm trong khoảng từ 1 đến 5");
-        }
-
-        this.rating = rating;
-        this.comment = comment;
-    }
 }

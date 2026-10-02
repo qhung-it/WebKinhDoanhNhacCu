@@ -154,18 +154,4 @@ public class Product {
     public void setPromotions(List<Promotion> promotions) {
         this.promotions = promotions;
     }
-
-    public boolean checkStock(int requestedQuantity) {
-        return requestedQuantity > 0 && quantity >= requestedQuantity;
-    }
-
-    public void updateStock(int quantityChange) {
-        int newQuantity = this.quantity + quantityChange;
-
-        if (newQuantity < 0) {
-            throw new IllegalArgumentException("Số lượng tồn kho không thể nhỏ hơn 0");
-        }
-
-        this.quantity = newQuantity;
-    }
 }

@@ -2,8 +2,6 @@ package model.entity;
 
 import jakarta.persistence.*;
 
-import java.math.BigDecimal;
-
 @Entity
 @Table(name = "cart_line_item")
 public class CartLineItem {
@@ -52,12 +50,5 @@ public class CartLineItem {
 
     public void setQuantity(int quantity) {
         this.quantity = quantity;
-    }
-
-    public BigDecimal calculateSubtotal() {
-        if (product == null) { return BigDecimal.ZERO; }
-
-        return product.getPrice()
-                .multiply(BigDecimal.valueOf(quantity));
     }
 }
