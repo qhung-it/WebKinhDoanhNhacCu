@@ -1,6 +1,7 @@
 package model.entity;
 
 import jakarta.persistence.*;
+import model.DiscountType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -23,9 +24,6 @@ public class Order {
     @Column(name = "discount")
     private BigDecimal discount;
 
-    @Column(name = "deposit_amount")
-    private BigDecimal depositAmount;
-
     @Column(name = "total_amount")
     private BigDecimal totalAmount;
 
@@ -43,13 +41,13 @@ public class Order {
     @JoinColumn(name = "status_id")
     private OrderStatus orderStatus;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<OrderLineItem> orderLineItems = new ArrayList<>();
 
-    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "order", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
     private Payment payment;
 
-    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "order", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
     private Deposit deposit;
 
     public String getOrderId() {
@@ -82,14 +80,6 @@ public class Order {
 
     public void setDiscount(BigDecimal discount) {
         this.discount = discount;
-    }
-
-    public BigDecimal getDepositAmount() {
-        return depositAmount;
-    }
-
-    public void setDepositAmount(BigDecimal depositAmount) {
-        this.depositAmount = depositAmount;
     }
 
     public BigDecimal getTotalAmount() {
@@ -154,5 +144,107 @@ public class Order {
 
     public void setDeposit(Deposit deposit) {
         this.deposit = deposit;
+    }
+
+    public BigDecimal calculateSubtotal() {
+        BigDecimal result = BigDecimal.ZERO;
+
+        for (OrderLineItem item : orderLineItems) {
+            if (item != null) {
+                result = result.add(item.calculateSubtotal());
+            }
+        }
+
+        this.subtotal = result;
+        return result;
+    }
+
+    public BigDecimal calculateDiscount() {
+        if (user == null || user.getCustomerRank() == null) {
+            this.discount = BigDecimal.ZERO;
+            return this.discount;
+        }
+
+        CustomerRank customerRank = user.getCustomerRank();
+        LocalDateTime now = LocalDateTime.now();
+
+        BigDecimal totalDiscount = BigDecimal.ZERO;
+
+        for (OrderLineItem item : orderLineItems) {
+            Product product = item.getProduct();
+
+            if (product == null) {
+                continue;
+            }
+
+            BigDecimal itemSubtotal = item.calculateSubtotal();
+            BigDecimal itemDiscount = BigDecimal.ZERO;
+
+            for (Promotion promotion : product.getPromotions()) {
+
+                // Kiểm tra thời gian áp dụng
+                if (promotion.getStartDateTime() != null
+                        && now.isBefore(promotion.getStartDateTime())) {
+                    continue;
+                }
+
+                if (promotion.getEndDateTime() != null
+                        && now.isAfter(promotion.getEndDateTime())) {
+                    continue;
+                }
+
+                // Kiểm tra CustomerRank
+                if (!promotion.getCustomerRanks().contains(customerRank)) {
+                    continue;
+                }
+
+                BigDecimal value = promotion.getDiscountValue();
+
+                if (value == null || value.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+
+                BigDecimal currentDiscount;
+
+                if (promotion.getDiscountType() == DiscountType.PERCENTAGE) {
+                    currentDiscount = itemSubtotal
+                            .multiply(value)
+                            .divide(BigDecimal.valueOf(100));
+                } else {
+                    currentDiscount = value;
+                }
+
+                // Không giảm quá giá trị sản phẩm
+                if (currentDiscount.compareTo(itemSubtotal) > 0) {
+                    currentDiscount = itemSubtotal;
+                }
+
+                // Chọn promotion giảm nhiều nhất
+                if (currentDiscount.compareTo(itemDiscount) > 0) {
+                    itemDiscount = currentDiscount;
+                }
+            }
+
+            totalDiscount = totalDiscount.add(itemDiscount);
+        }
+
+        this.discount = totalDiscount;
+        return this.discount;
+    }
+
+    public BigDecimal calculateTotal() {
+        this.totalAmount = calculateSubtotal()
+                .subtract(calculateDiscount());
+
+        return this.totalAmount;
+    }
+
+    public void addLineItem(OrderLineItem lineItem) {
+        if (lineItem == null) {
+            return;
+        }
+
+        orderLineItems.add(lineItem);
+        lineItem.setOrder(this);
     }
 }

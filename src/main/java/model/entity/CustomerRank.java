@@ -1,6 +1,7 @@
 package model.entity;
 
 import jakarta.persistence.*;
+import model.RankName;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -13,8 +14,9 @@ public class CustomerRank {
     @Column(name = "rank_id")
     private String rankId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "rank_name")
-    private String rankName;
+    private RankName rankName;
 
     @Column(name = "min_spending")
     private BigDecimal minSpending;
@@ -36,11 +38,11 @@ public class CustomerRank {
         this.rankId = rankId;
     }
 
-    public String getRankName() {
+    public RankName getRankName() {
         return rankName;
     }
 
-    public void setRankName(String rankName) {
+    public void setRankName(RankName rankName) {
         this.rankName = rankName;
     }
 
@@ -74,5 +76,13 @@ public class CustomerRank {
 
     public void setPromotions(List<Promotion> promotions) {
         this.promotions = promotions;
+    }
+
+    public boolean isEligible(BigDecimal totalSpending) {
+        if (totalSpending == null || minSpending == null) {
+            return false;
+        }
+
+        return totalSpending.compareTo(minSpending) >= 0;
     }
 }

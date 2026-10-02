@@ -1,8 +1,10 @@
 package model.entity;
 
 import jakarta.persistence.*;
+import model.RankName;
 import model.Role;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -131,5 +133,69 @@ public class User {
 
     public void setReviews(List<Review> reviews) {
         this.reviews = reviews;
+    }
+
+    public void updateProfile(String fullName, String email, String phone, String address) {
+        if (fullName == null || fullName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Họ tên không được để trống");
+        }
+
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email không được để trống");
+        }
+
+        if (phone == null || phone.trim().isEmpty()) {
+            throw new IllegalArgumentException("Số điện thoại không được để trống");
+        }
+
+        this.fullName = fullName;
+        this.email = email;
+        this.phone = phone;
+        this.address = address;
+    }
+
+    public void changePassword(String oldPassword, String newPassword) {
+        if (oldPassword == null || !this.password.equals(oldPassword)) {
+            throw new IllegalArgumentException("Mật khẩu hiện tại không chính xác");
+        }
+
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mật khẩu mới không được để trống");
+        }
+
+        if (newPassword.equals(oldPassword)) {
+            throw new IllegalArgumentException("Mật khẩu mới phải khác mật khẩu cũ");
+        }
+
+        this.password = newPassword;
+    }
+
+    public RankName calculateRank(BigDecimal totalSpending) {
+        if (totalSpending == null) {
+            return null;
+        }
+
+        BigDecimal bronze = new BigDecimal("100000000");
+        BigDecimal silver = new BigDecimal("150000000");
+        BigDecimal gold = new BigDecimal("250000000");
+        BigDecimal vip = new BigDecimal("500000000");
+
+        if (totalSpending.compareTo(vip) >= 0) {
+            return RankName.VIP;
+        }
+
+        if (totalSpending.compareTo(gold) >= 0) {
+            return RankName.GOLD;
+        }
+
+        if (totalSpending.compareTo(silver) >= 0) {
+            return RankName.SILVER;
+        }
+
+        if (totalSpending.compareTo(bronze) >= 0) {
+            return RankName.BRONZE;
+        }
+
+        return null;
     }
 }
