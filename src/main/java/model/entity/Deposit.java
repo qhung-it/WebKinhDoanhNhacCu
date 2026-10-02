@@ -66,4 +66,29 @@ public class Deposit {
     public void setOrder(Order order) {
         this.order = order;
     }
+
+    public BigDecimal calculateDeposit() {
+        if (order == null || order.getTotalAmount() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal totalAmount = order.getTotalAmount();
+        BigDecimal minimumAmount = new BigDecimal("100000000");
+
+        if (totalAmount.compareTo(minimumAmount) < 0) {
+            return BigDecimal.ZERO;
+        }
+
+        return totalAmount.multiply(new BigDecimal("0.30"));
+    }
+
+    public void processDeposit() {
+        this.amount = calculateDeposit();
+        this.depositStatus = DepositStatus.COMPLETED;
+        this.depositDate = LocalDateTime.now();
+    }
+
+    public boolean checkDepositStatus() {
+        return this.depositStatus == DepositStatus.COMPLETED;
+    }
 }

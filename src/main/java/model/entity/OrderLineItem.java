@@ -64,4 +64,12 @@ public class OrderLineItem {
     public void setOrder(Order order) {
         this.order = order;
     }
+
+    public BigDecimal calculateSubtotal() {
+        if (unitPrice == null || quantity <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        return unitPrice.multiply(BigDecimal.valueOf(quantity));
+    }
 }
