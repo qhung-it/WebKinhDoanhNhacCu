@@ -1,12 +1,14 @@
 package controller.service.impl;
 
 import controller.service.intf.OrderService;
+import model.OrderStatus;
 import model.dao.impl.OrderDAOImpl;
 import model.dao.intf.OrderDAO;
 import model.entity.Order;
 import model.entity.OrderLineItem;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 public class OrderServiceImpl implements OrderService {
@@ -35,16 +37,13 @@ public class OrderServiceImpl implements OrderService {
 
             if (item == null ||
                     item.getProduct() == null ||
-                    item.getUnitPrice() == null ||
                     item.getQuantity() <= 0) {
                 continue;
             }
 
             item.setOrder(order);
 
-            BigDecimal thanhTien =
-                    item.getUnitPrice()
-                            .multiply(BigDecimal.valueOf(item.getQuantity()));
+            BigDecimal thanhTien = item.calculateSubtotal();
 
             subtotal = subtotal.add(thanhTien);
         }
@@ -64,8 +63,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setDiscount(discount);
 
-        BigDecimal totalAmount =
-                subtotal.subtract(discount);
+        BigDecimal totalAmount = subtotal.subtract(discount);
 
         order.setTotalAmount(totalAmount);
 
@@ -75,16 +73,19 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public void huyDonHang(String orderId) {
 
+        if (orderId == null || orderId.trim().isEmpty()) {
+            return;
+        }
+
         Order order = orderDAO.findById(orderId);
 
         if (order == null) {
             return;
         }
 
-        /*
-         * Tạm thời chưa xóa Order khỏi database.
-         * Trạng thái hủy sẽ được xử lý khi hoàn thiện OrderStatus.
-         */
+        order.setOrderStatus(OrderStatus.CANCELLED);
+
+        orderDAO.update(order);
     }
 
     @Override
@@ -98,24 +99,39 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<Order> getDonHangTheoTrangThai(String statusId) {
-        return orderDAO.findByStatusId(statusId);
+    public List<Order> getDonHangTheoTrangThai(OrderStatus status) {
+
+        if (status == null) {
+            return new ArrayList<>();
+        }
+
+        return orderDAO.findByStatus(status);
     }
 
     @Override
-    public void capNhatTrangThai(String orderId, String statusId) {
+    public void capNhatTrangThai(String orderId, OrderStatus status) {
 
-        if (orderId == null || statusId == null) {
+        if (orderId == null ||
+                orderId.trim().isEmpty() ||
+                status == null) {
             return;
         }
 
-        orderDAO.updateStatus(orderId, statusId);
+        Order order = orderDAO.findById(orderId);
+
+        if (order == null) {
+            return;
+        }
+
+        order.setOrderStatus(status);
+
+        orderDAO.update(order);
     }
 
     @Override
     public BigDecimal thongKeDoanhThuTheoSanPham(String productId) {
 
-        if (productId == null) {
+        if (productId == null || productId.trim().isEmpty()) {
             return BigDecimal.ZERO;
         }
 
@@ -125,7 +141,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public BigDecimal thongKeDoanhThuTheoDanhMuc(String categoryId) {
 
-        if (categoryId == null) {
+        if (categoryId == null || categoryId.trim().isEmpty()) {
             return BigDecimal.ZERO;
         }
 

@@ -1,5 +1,6 @@
 package model.dao.intf;
 
+import model.OrderStatus;
 import model.entity.Order;
 
 import java.math.BigDecimal;
@@ -17,11 +18,9 @@ public interface OrderDAO {
 
     List<Order> findByUserId(String userId);
 
-    List<Order> findByStatusId(String statusId);
+    List<Order> findByStatus(OrderStatus status);
 
     List<Order> findAll();
-
-    boolean updateStatus(String orderId, String statusId);
 
     BigDecimal thongKeDoanhThuTheoSanPham(String productId);
 

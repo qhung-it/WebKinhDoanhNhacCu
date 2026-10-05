@@ -20,6 +20,14 @@ public class Cart {
     @OneToMany(mappedBy = "cart", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CartLineItem> cartLineItems = new ArrayList<>();
 
+    public String getCartId() {
+        return cartId;
+    }
+
+    public void setCartId(String cartId) {
+        this.cartId = cartId;
+    }
+
     public User getUser() {
         return user;
     }
@@ -43,15 +51,20 @@ public class Cart {
     public boolean removeItem(CartLineItem item) {
         return cartLineItems.remove(item);
     }
+
     public BigDecimal calculateTotal() {
         BigDecimal result = BigDecimal.ZERO;
-        for (CartLineItem x : cartLineItems){
+
+        for (CartLineItem x : cartLineItems) {
             result = result.add(
-                    x.getProduct().getPrice().multiply(BigDecimal.valueOf(x.getQuantity()))
-                    );
+                    x.getProduct().getPrice()
+                            .multiply(BigDecimal.valueOf(x.getQuantity()))
+            );
         }
+
         return result;
     }
+
     public void clearCart() {
         this.cartLineItems.clear();
     }

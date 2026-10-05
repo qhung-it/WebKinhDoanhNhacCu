@@ -1,9 +1,9 @@
 package model.dao.impl;
 
 import jakarta.persistence.EntityManager;
+import model.OrderStatus;
 import model.dao.intf.OrderDAO;
 import model.entity.Order;
-import model.entity.OrderStatus;
 import model.util.JpaUtil;
 
 import java.math.BigDecimal;
@@ -124,16 +124,17 @@ public class OrderDAOImpl implements OrderDAO {
     }
 
     @Override
-    public List<Order> findByStatusId(String statusId) {
-        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+    public List<Order> findByStatus(OrderStatus status) {
+
+        EntityManager em =
+                JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
             return em.createQuery(
-                            "SELECT o FROM Order o " +
-                                    "WHERE o.orderStatus.statusId = :statusId",
+                            "SELECT o FROM Order o WHERE o.orderStatus = :status",
                             Order.class
                     )
-                    .setParameter("statusId", statusId)
+                    .setParameter("status", status)
                     .getResultList();
 
         } finally {
@@ -150,46 +151,6 @@ public class OrderDAOImpl implements OrderDAO {
                     "SELECT o FROM Order o",
                     Order.class
             ).getResultList();
-
-        } finally {
-            em.close();
-        }
-    }
-
-    @Override
-    public boolean updateStatus(String orderId, String statusId) {
-        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
-
-        try {
-            em.getTransaction().begin();
-
-            Order order = em.find(Order.class, orderId);
-
-            if (order == null) {
-                em.getTransaction().rollback();
-                return false;
-            }
-
-            OrderStatus orderStatus =
-                    em.find(OrderStatus.class, statusId);
-
-            if (orderStatus == null) {
-                em.getTransaction().rollback();
-                return false;
-            }
-
-            order.setOrderStatus(orderStatus);
-
-            em.getTransaction().commit();
-            return true;
-
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-
-            e.printStackTrace();
-            return false;
 
         } finally {
             em.close();

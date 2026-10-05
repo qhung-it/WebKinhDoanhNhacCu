@@ -2,6 +2,7 @@ package model.entity;
 
 import jakarta.persistence.*;
 import model.DiscountType;
+import model.OrderStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,6 +31,10 @@ public class Order {
     @Column(name = "shipping_address")
     private String shippingAddress;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "order_status", nullable = false)
+    private OrderStatus orderStatus = OrderStatus.PENDING;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
@@ -37,17 +42,28 @@ public class Order {
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     private List<Review> reviews = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "status_id")
-    private OrderStatus orderStatus;
-
-    @OneToMany(mappedBy = "order", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(
+            mappedBy = "order",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
     private List<OrderLineItem> orderLineItems = new ArrayList<>();
 
-    @OneToOne(mappedBy = "order", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(
+            mappedBy = "order",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
     private Payment payment;
 
-    @OneToOne(mappedBy = "order", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(
+            mappedBy = "order",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
     private Deposit deposit;
 
     public String getOrderId() {
@@ -182,7 +198,6 @@ public class Order {
 
             for (Promotion promotion : product.getPromotions()) {
 
-                // Kiểm tra thời gian áp dụng
                 if (promotion.getStartDateTime() != null
                         && now.isBefore(promotion.getStartDateTime())) {
                     continue;
@@ -193,7 +208,6 @@ public class Order {
                     continue;
                 }
 
-                // Kiểm tra CustomerRank
                 if (!promotion.getCustomerRanks().contains(customerRank)) {
                     continue;
                 }
@@ -214,12 +228,10 @@ public class Order {
                     currentDiscount = value;
                 }
 
-                // Không giảm quá giá trị sản phẩm
                 if (currentDiscount.compareTo(itemSubtotal) > 0) {
                     currentDiscount = itemSubtotal;
                 }
 
-                // Chọn promotion giảm nhiều nhất
                 if (currentDiscount.compareTo(itemDiscount) > 0) {
                     itemDiscount = currentDiscount;
                 }

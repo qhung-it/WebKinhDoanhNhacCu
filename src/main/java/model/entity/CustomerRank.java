@@ -21,9 +21,6 @@ public class CustomerRank {
     @Column(name = "min_spending")
     private BigDecimal minSpending;
 
-    @Column(name = "description")
-    private String description;
-
     @OneToMany(mappedBy = "customerRank")
     private List<User> users = new ArrayList<>();
 
@@ -52,14 +49,6 @@ public class CustomerRank {
 
     public void setMinSpending(BigDecimal minSpending) {
         this.minSpending = minSpending;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public List<User> getUsers() {
