@@ -28,9 +28,6 @@ public class Product {
     @Column(name = "image")
     private String image;
 
-    @Column(name = "status")
-    private String status;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "brand_id")
     private Brand brand;
@@ -97,14 +94,6 @@ public class Product {
 
     public void setImage(String image) {
         this.image = image;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 
     public Brand getBrand() {

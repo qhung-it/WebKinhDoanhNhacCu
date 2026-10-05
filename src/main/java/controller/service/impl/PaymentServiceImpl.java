@@ -153,14 +153,12 @@ public class PaymentServiceImpl implements PaymentService {
             return;
         }
 
-        /*
-         * PaymentStatus hiện tại chỉ có:
-         * PENDING
-         * COMPLETED
-         * FAILED
-         *
-         * Chưa có REFUNDED nên chưa thay đổi
-         * trạng thái tại đây.
-         */
+        if (payment.getPaymentStatus() != PaymentStatus.COMPLETED) {
+            return;
+        }
+
+        payment.setPaymentStatus(PaymentStatus.REFUNDED);
+
+        paymentDAO.update(payment);
     }
 }

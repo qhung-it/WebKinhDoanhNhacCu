@@ -1,8 +1,8 @@
 package model;
 
-public enum PaymentStatus {
+public enum OrderStatus {
     PENDING,
     COMPLETED,
     FAILED,
-    REFUNDED
+    CANCELLED
 }

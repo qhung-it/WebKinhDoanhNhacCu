@@ -18,9 +18,6 @@ public class OrderLineItem {
     @Column(name = "quantity")
     private int quantity;
 
-    @Column(name = "unit_price")
-    private BigDecimal unitPrice;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
@@ -49,19 +46,19 @@ public class OrderLineItem {
         this.orderLineItemId = orderLineItemId;
     }
 
-    public BigDecimal getUnitPrice() {
-        return unitPrice;
-    }
-
-    public void setUnitPrice(BigDecimal unitPrice) {
-        this.unitPrice = unitPrice;
-    }
-
     public Order getOrder() {
         return order;
     }
 
     public void setOrder(Order order) {
         this.order = order;
+    }
+
+    public BigDecimal calculateSubtotal() {
+        if (product == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return product.getPrice().multiply(BigDecimal.valueOf(quantity));
     }
 }

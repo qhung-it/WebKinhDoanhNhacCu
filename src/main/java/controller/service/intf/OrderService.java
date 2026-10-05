@@ -1,5 +1,6 @@
 package controller.service.intf;
 
+import model.OrderStatus;
 import model.entity.Order;
 
 import java.math.BigDecimal;
@@ -15,9 +16,9 @@ public interface OrderService {
 
     List<Order> getDonHangTheoUser(String userId);
 
-    List<Order> getDonHangTheoTrangThai(String statusId);
+    List<Order> getDonHangTheoTrangThai(OrderStatus status);
 
-    void capNhatTrangThai(String orderId, String statusId);
+    void capNhatTrangThai(String orderId, OrderStatus status);
 
     BigDecimal thongKeDoanhThuTheoSanPham(String productId);
 

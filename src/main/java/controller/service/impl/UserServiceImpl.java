@@ -2,8 +2,11 @@ package controller.service.impl;
 
 import controller.service.intf.UserService;
 import model.Role;
+import model.dao.impl.CustomerRankDAOImpl;
 import model.dao.impl.UserDAOImpl;
+import model.dao.intf.CustomerRankDAO;
 import model.dao.intf.UserDAO;
+import model.entity.CustomerRank;
 import model.entity.User;
 
 import java.util.List;
@@ -11,9 +14,11 @@ import java.util.List;
 public class UserServiceImpl implements UserService {
 
     private final UserDAO userDAO;
+    private final CustomerRankDAO customerRankDAO;
 
     public UserServiceImpl() {
         this.userDAO = new UserDAOImpl();
+        this.customerRankDAO = new CustomerRankDAOImpl();
     }
 
     @Override
@@ -80,14 +85,29 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void capNhatHangKhachHang(String userId, String rankId) {
+
+        if (userId == null || userId.trim().isEmpty()) {
+            return;
+        }
+
+        if (rankId == null || rankId.trim().isEmpty()) {
+            return;
+        }
+
         User user = userDAO.findById(userId);
 
         if (user == null) {
             return;
         }
 
-        // Việc lấy CustomerRank cụ thể sẽ được xử lý
-        // khi kết nối UserService với CustomerRankService/DAO.
+        CustomerRank customerRank = customerRankDAO.findById(rankId);
+
+        if (customerRank == null) {
+            return;
+        }
+
+        user.setCustomerRank(customerRank);
+
         userDAO.update(user);
     }
 
