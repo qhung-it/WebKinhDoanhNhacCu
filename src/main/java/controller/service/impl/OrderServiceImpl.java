@@ -37,16 +37,13 @@ public class OrderServiceImpl implements OrderService {
 
             if (item == null ||
                     item.getProduct() == null ||
-                    item.getUnitPrice() == null ||
                     item.getQuantity() <= 0) {
                 continue;
             }
 
             item.setOrder(order);
 
-            BigDecimal thanhTien =
-                    item.getUnitPrice()
-                            .multiply(BigDecimal.valueOf(item.getQuantity()));
+            BigDecimal thanhTien = item.calculateSubtotal();
 
             subtotal = subtotal.add(thanhTien);
         }
@@ -66,8 +63,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setDiscount(discount);
 
-        BigDecimal totalAmount =
-                subtotal.subtract(discount);
+        BigDecimal totalAmount = subtotal.subtract(discount);
 
         order.setTotalAmount(totalAmount);
 
