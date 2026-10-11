@@ -96,7 +96,9 @@ public class ProductDAOImpl implements ProductDAO {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
-            return em.find(Product.class, productId);
+            return em.createQuery("SELECT p FROM Product p LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category WHERE p.productId = :id", Product.class)
+                    .setParameter("id", productId)
+                    .getResultStream().findFirst().orElse(null);
 
         } finally {
             em.close();
