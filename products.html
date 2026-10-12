@@ -4,13 +4,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Khuyến Mãi Khủng - Nhạc Cụ Chính Hãng | Soundora</title>
+<title>Tất Cả Sản Phẩm - Nhạc Cụ Chính Hãng | Soundora</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
 <link href="styles.css" rel="stylesheet"/>
 <link href="data:image/svg+xml,&lt;svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27&gt;&lt;text y=%27.9em%27 font-size=%2790%27&gt;🎵&lt;/text&gt;&lt;/svg&gt;" rel="icon"/></head>
-<body data-page="promotions">
+<body data-page="products">
 <!-- Top Bar -->
 <div class="top-bar">
 <div class="container">
@@ -34,9 +34,9 @@
 </a>
 <nav class="nav">
 <a href="index.html">Trang chủ</a>
-<a href="products.html">Sản phẩm</a>
+<a class="active" href="products.html">Sản phẩm</a>
 <a href="brands.html">Thương hiệu</a>
-<a class="active" href="promotions.html">Khuyến mãi</a>
+<a href="promotions.html">Khuyến mãi</a>
 <a href="news.html">Tin tức</a>
 <a href="contact.html">Liên hệ</a>
 </nav>
@@ -73,9 +73,9 @@
 </div>
 <ul class="mobile-nav">
 <li><a href="index.html"><i class="fas fa-home"></i> Trang chủ</a></li>
-<li><a href="products.html"><i class="fas fa-guitar"></i> Sản phẩm</a></li>
+<li><a class="active" href="products.html"><i class="fas fa-guitar"></i> Sản phẩm</a></li>
 <li><a href="brands.html"><i class="fas fa-award"></i> Thương hiệu</a></li>
-<li><a class="active" href="promotions.html"><i class="fas fa-tags"></i> Khuyến mãi</a></li>
+<li><a href="promotions.html"><i class="fas fa-tags"></i> Khuyến mãi</a></li>
 <li><a href="news.html"><i class="fas fa-newspaper"></i> Tin tức</a></li>
 <li><a href="contact.html"><i class="fas fa-envelope"></i> Liên hệ</a></li>
 <li><a href="wishlist.html"><i class="far fa-heart"></i> Yêu thích</a></li><li><a href="cart.html"><i class="fas fa-shopping-bag"></i> Giỏ hàng</a></li><li><a href="login.html"><i class="far fa-user"></i> Tài khoản</a></li></ul>
@@ -85,81 +85,52 @@
 <div class="breadcrumb">
 <a href="index.html"><i class="fas fa-home"></i> Trang chủ</a>
 <span class="separator"><i class="fas fa-chevron-right"></i></span>
-<span class="current">Khuyến mãi</span>
+<span class="current">Sản phẩm</span>
 </div>
 </div>
-<!-- Main Content -->
+<!-- Page Header Banner -->
+<section class="page-header">
+<div class="container">
+<h1>Tất cả sản phẩm</h1>
+<p>Khám phá bộ sưu tập hơn 1.000+ nhạc cụ và phụ kiện âm nhạc chính hãng với mức giá tốt nhất</p>
+</div>
+</section>
+<!-- Main Content Listing -->
 <main>
 <div class="container">
-<!-- Large Promo Banner -->
-<section class="promo-banner-large fade-in">
-<h1>Đại Tiệc Khuyến Mãi 🎵</h1>
-<p>Giảm đến 50% cho hàng trăm sản phẩm nhạc cụ</p>
-<div class="countdown">
-<div class="countdown-item">
-<span class="number" data-days="">07</span>
-<span class="label">Ngày</span>
+<div class="listing-layout">
+<!-- Filter Sidebar -->
+<aside class="filter-sidebar" id="filterSidebar"></aside>
+<!-- Product Listing Main Column -->
+<div style="min-width: 0;">
+<!-- Listing Toolbar -->
+<div class="listing-toolbar">
+<div class="result-count" id="resultCount"></div>
+<div style="display: flex; align-items: center; gap: 16px;">
+<div class="sort-select">
+<label for="sort-select-box"><i class="fas fa-sort-amount-down"></i> Sắp xếp:</label>
+<select id="sort-select-box">
+<option value="featured">Nổi bật nhất</option>
+<option value="price-asc">Giá: Thấp đến Cao</option>
+<option value="price-desc">Giá: Cao đến Thấp</option>
+<option value="name-asc">Tên: A - Z</option>
+<option value="name-desc">Tên: Z - A</option>
+<option value="newest">Mới nhất</option>
+<option value="rating">Đánh giá cao</option>
+</select>
 </div>
-<div class="countdown-item">
-<span class="number" data-hours="">00</span>
-<span class="label">Giờ</span>
-</div>
-<div class="countdown-item">
-<span class="number" data-minutes="">00</span>
-<span class="label">Phút</span>
-</div>
-<div class="countdown-item">
-<span class="number" data-seconds="">00</span>
-<span class="label">Giây</span>
+<div class="view-toggle">
+<button class="active" title="Dạng lưới"><i class="fas fa-th-large"></i></button>
+<button title="Dạng danh sách"><i class="fas fa-list"></i></button>
 </div>
 </div>
-<a class="btn btn-white" href="#promo-products">Mua sắm ngay</a>
-</section>
-<!-- Promotional Section: Products -->
-<section class="fade-in" style="margin-bottom:48px"><div class="section-header"><h2>Mã giảm giá</h2></div><div class="coupon-grid" id="couponGrid"></div></section><section class="fade-in" id="promo-products" style="margin-bottom: 48px;">
-<div class="section-header">
-<h2>Sản phẩm khuyến mãi</h2>
 </div>
-<!-- Promo Products Grid (8 products) -->
-<div class="promo-products-grid" data-render="promo"></div>
-</section>
-<!-- Three Promotional Cards for Different Categories -->
-<section class="fade-in" style="margin-bottom: 48px;">
-<div class="section-header">
-<h2>Ưu đãi theo ngành hàng</h2>
+<!-- Product Grid (12 items) -->
+<div class="products-grid" id="productsGrid"></div>
+<!-- Pagination -->
+<div class="pagination" id="pagination"></div>
 </div>
-<div class="promo-grid">
-<a class="promo-card promo-guitar" href="products.html">
-<span class="promo-emoji">🎸</span>
-<h3>Siêu Hội Guitar &amp; Bass</h3>
-<p>Giảm đến 40% · Tặng kèm bao đàn cao cấp &amp; phím gảy</p>
-<span class="btn btn-sm btn-outline-white">Khám phá ngay <i class="fas fa-arrow-right"></i></span>
-</a>
-<a class="promo-card promo-piano" href="products.html">
-<span class="promo-emoji">🎹</span>
-<h3>Tuần Lễ Vàng Piano &amp; Keyboard</h3>
-<p>Tặng kèm ghế đàn bọc da + Tai nghe · Trả góp 0% lãi suất</p>
-<span class="btn btn-sm btn-outline-white">Nhận ưu đãi <i class="fas fa-arrow-right"></i></span>
-</a>
-<a class="promo-card promo-accessory" href="products.html">
-<span class="promo-emoji">🎧</span>
-<h3>Phụ Kiện Chính Hãng Siêu Deal</h3>
-<p>Mua 1 tặng 1 dây đàn · Giảm 50% tai nghe &amp; amply mini</p>
-<span class="btn btn-sm btn-outline-white">Săn deal ngay <i class="fas fa-arrow-right"></i></span>
-</a>
 </div>
-</section>
-</div>
-<!-- Newsletter -->
-<div class="container">
-<section class="newsletter-section fade-in">
-<h2>📬 Đăng ký nhận tin</h2>
-<p>Nhận thông tin khuyến mãi, sản phẩm mới và ưu đãi độc quyền sớm nhất</p>
-<form class="newsletter-form" novalidate="">
-<input placeholder="Nhập email của bạn..." required="" type="email"/>
-<button class="btn btn-white" type="submit">Đăng ký <i class="fas fa-paper-plane"></i></button>
-</form>
-</section>
 </div>
 </main>
 <!-- Footer -->
@@ -228,7 +199,7 @@
 </div>
 </div>
 </footer>
-<!-- Scroll to Top -->
+<!-- Scroll to Top Button -->
 <button class="scroll-top"><i class="fas fa-chevron-up"></i></button>
 <script src="data.js"></script>
 <script src="script.js"></script>
