@@ -278,3 +278,89 @@ const INFO_PAGES = {
     ]
   }
 };
+
+/* ============================================================
+   [NÂNG CẤP] Lớp dữ liệu dùng chung giữa Cửa hàng và Admin
+   - Admin lưu thay đổi vào localStorage (khóa sdr_a_*), phần này nạp chồng lên dữ liệu gốc.
+   - Khi có backend thật, chỉ cần thay phần này bằng lời gọi API.
+   ============================================================ */
+const SDR = {
+  read(k, d) { try { const v = localStorage.getItem('sdr_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  write(k, v) { try { localStorage.setItem('sdr_' + k, JSON.stringify(v)); } catch (e) { /* bỏ qua */ } }
+};
+
+/* Hạng thành viên mặc định (Admin có thể chỉnh) */
+const DEFAULT_TIERS = [
+  { key: 'thuong',     name: 'Thường',     min: 0,        discount: 0, color: '#8E8E93' },
+  { key: 'thanh-vien', name: 'Thành viên', min: 5000000,  discount: 2, color: '#0984E3' },
+  { key: 'vip',        name: 'VIP',        min: 20000000, discount: 5, color: '#E1A200' }
+];
+const TIERS = DEFAULT_TIERS.slice();
+
+(function applyOverrides() {
+  const replaceArr = (arr, next) => { arr.length = 0; next.forEach(x => arr.push(x)); };
+  const cats = SDR.read('a_categories', null);   if (Array.isArray(cats)) replaceArr(CATEGORIES, cats);
+  const brands = SDR.read('a_brands', null);     if (Array.isArray(brands)) replaceArr(BRANDS, brands);
+  const prods = SDR.read('a_products', null);    if (Array.isArray(prods)) replaceArr(PRODUCTS, prods);
+  const news = SDR.read('a_news', null);         if (Array.isArray(news)) replaceArr(NEWS, news);
+  const coupons = SDR.read('a_coupons', null);
+  if (coupons && typeof coupons === 'object') { Object.keys(COUPONS).forEach(k => delete COUPONS[k]); Object.assign(COUPONS, coupons); }
+  const tiers = SDR.read('a_tiers', null);       if (Array.isArray(tiers) && tiers.length) replaceArr(TIERS, tiers);
+  const site = SDR.read('a_site', null);         if (site) Object.assign(SITE, site);
+  const stock = SDR.read('a_stock', {});          // { id: tồn kho hiện tại } do đơn hàng / nhập kho thay đổi
+  PRODUCTS.forEach(p => { if (stock[p.id] != null) p.stock = stock[p.id]; });
+  // Danh mục đang tắt => ẩn sản phẩm thuộc danh mục đó trên cửa hàng
+  const hiddenCats = CATEGORIES.filter(c => c.active === false).map(c => c.key);
+  window.ALL_PRODUCTS = PRODUCTS.slice();        // bản đầy đủ cho Admin
+  const isAdmin = document.body && document.body.dataset.page === 'admin';
+  if (!isAdmin) {
+    const visible = PRODUCTS.filter(p => p.active !== false && !hiddenCats.includes(p.cat));
+    replaceArr(PRODUCTS, visible);
+    const vis = CATEGORIES.filter(c => c.active !== false);
+    replaceArr(CATEGORIES, vis);
+    const now = Date.now();
+    Object.keys(COUPONS).forEach(k => {
+      const c = COUPONS[k];
+      if (c.active === false || (c.end && new Date(c.end).getTime() + 86399000 < now) || (c.start && new Date(c.start).getTime() > now)) delete COUPONS[k];
+    });
+  }
+})();
+
+/* ---------- Ảnh sản phẩm ----------
+   - Nếu sản phẩm có p.img (đường dẫn ảnh thật, ví dụ 'images/products/yamaha-f310.jpg') => dùng ảnh đó.
+   - Nếu chưa có / ảnh lỗi => tự vẽ ảnh minh họa SVG theo loại nhạc cụ + màu thương hiệu.
+   => Mọi trang (danh sách, chi tiết, giỏ hàng, thanh toán, đơn hàng) đều dùng chung 1 hàm productImg(). */
+const ART_COLORS = {
+  guitar: ['#6C5CE7', '#A29BFE'], piano: ['#2D3436', '#636E72'], trong: ['#D63031', '#FF7675'], organ: ['#0984E3', '#74B9FF'],
+  ukulele: ['#E17055', '#FAB1A0'], violin: ['#B33771', '#FD7272'], 'ken-sao': ['#F39C12', '#FDCB6E'], 'phu-kien': ['#00B894', '#55EFC4']
+};
+function artShape(cat) {
+  const w = '#fff', s = 'rgba(0,0,0,.18)';
+  switch (cat) {
+    case 'guitar': return '<g transform="rotate(-35 200 200)"><rect x="188" y="30" width="24" height="170" rx="6" fill="' + w + '" opacity=".95"/><rect x="180" y="12" width="40" height="40" rx="8" fill="' + w + '"/><ellipse cx="200" cy="262" rx="62" ry="58" fill="' + w + '"/><ellipse cx="200" cy="205" rx="44" ry="40" fill="' + w + '"/><circle cx="200" cy="240" r="20" fill="' + s + '"/><rect x="170" y="296" width="60" height="9" rx="4" fill="' + s + '"/></g>';
+    case 'piano': return '<rect x="50" y="130" width="300" height="150" rx="14" fill="' + w + '"/>' + [0,1,2,3,4,5,6].map(i => '<line x1="' + (93 + i * 43) + '" y1="130" x2="' + (93 + i * 43) + '" y2="280" stroke="' + s + '" stroke-width="2"/>').join('') + [0,1,3,4,5].map(i => '<rect x="' + (78 + i * 43) + '" y="130" width="28" height="90" rx="4" fill="#2D3436"/>').join('') + '<rect x="50" y="108" width="300" height="26" rx="8" fill="' + w + '" opacity=".6"/>';
+    case 'trong': return '<ellipse cx="200" cy="250" rx="82" ry="26" fill="' + w + '"/><rect x="118" y="170" width="164" height="80" fill="' + w + '" opacity=".9"/><ellipse cx="200" cy="170" rx="82" ry="26" fill="' + w + '"/><ellipse cx="200" cy="170" rx="70" ry="19" fill="' + s + '"/><line x1="130" y1="92" x2="188" y2="152" stroke="' + w + '" stroke-width="9" stroke-linecap="round"/><line x1="270" y1="92" x2="212" y2="152" stroke="' + w + '" stroke-width="9" stroke-linecap="round"/>';
+    case 'organ': return '<rect x="40" y="140" width="320" height="120" rx="12" fill="' + w + '"/><rect x="58" y="154" width="140" height="26" rx="5" fill="' + s + '"/>' + [0,1,2,3,4,5,6,7,8,9].map(i => '<rect x="' + (58 + i * 30) + '" y="196" width="24" height="50" rx="3" fill="#2D3436" opacity=".85"/>').join('') + '<circle cx="300" cy="167" r="9" fill="' + s + '"/><circle cx="328" cy="167" r="9" fill="' + s + '"/>';
+    case 'ukulele': return '<g transform="rotate(-30 200 200)"><rect x="192" y="52" width="16" height="130" rx="5" fill="' + w + '" opacity=".95"/><rect x="184" y="34" width="32" height="30" rx="7" fill="' + w + '"/><ellipse cx="200" cy="232" rx="50" ry="46" fill="' + w + '"/><ellipse cx="200" cy="184" rx="34" ry="30" fill="' + w + '"/><circle cx="200" cy="216" r="15" fill="' + s + '"/></g>';
+    case 'violin': return '<g transform="rotate(-18 200 200)"><rect x="193" y="40" width="14" height="120" rx="5" fill="' + w + '" opacity=".95"/><circle cx="200" cy="34" r="14" fill="' + w + '"/><path d="M200 140 C150 140 140 190 165 205 C140 225 145 285 200 285 C255 285 260 225 235 205 C260 190 250 140 200 140Z" fill="' + w + '"/><path d="M180 218 q8 -10 0 -20 M220 218 q-8 -10 0 -20" stroke="' + s + '" stroke-width="5" fill="none" stroke-linecap="round"/><rect x="186" y="262" width="28" height="6" rx="3" fill="' + s + '"/></g><line x1="90" y1="300" x2="320" y2="120" stroke="' + w + '" stroke-width="5" stroke-linecap="round" opacity=".8"/>';
+    case 'ken-sao': return '<g transform="rotate(-20 200 200)"><rect x="150" y="190" width="200" height="22" rx="11" fill="' + w + '"/>' + [0,1,2,3,4].map(i => '<circle cx="' + (180 + i * 30) + '" cy="201" r="6" fill="' + s + '"/>').join('') + '<path d="M150 190 h-30 a40 40 0 0 0 0 22 h30z" fill="' + w + '"/><path d="M350 190 l30 -20 l0 62 l-30 -20z" fill="' + w + '" opacity=".9"/></g>';
+    default: return '<rect x="110" y="110" width="180" height="190" rx="16" fill="' + w + '"/><circle cx="200" cy="225" r="52" fill="' + s + '"/><circle cx="200" cy="225" r="30" fill="' + w + '" opacity=".85"/><circle cx="200" cy="225" r="9" fill="' + s + '"/><circle cx="145" cy="140" r="9" fill="' + s + '"/><circle cx="255" cy="140" r="9" fill="' + s + '"/>';
+  }
+}
+function svgArt(p) {
+  const c = ART_COLORS[p.cat] || ['#6C5CE7', '#A29BFE'];
+  const label = String(p.brand || '').replace(/[&<>"']/g, '');
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + c[0] + '"/><stop offset="1" stop-color="' + c[1] + '"/></linearGradient><radialGradient id="r" cx=".3" cy=".25" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="400" height="400" fill="url(#g)"/><rect width="400" height="400" fill="url(#r)"/><circle cx="340" cy="60" r="90" fill="#fff" opacity=".08"/><circle cx="50" cy="360" r="110" fill="#fff" opacity=".07"/>' + artShape(p.cat) + '<text x="200" y="372" text-anchor="middle" font-family="Poppins,Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="3" fill="#fff" opacity=".9">' + label.toUpperCase() + '</text></svg>';
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+/* URL ảnh chính của sản phẩm (ưu tiên ảnh thật p.img) */
+function productImg(p, i) {
+  if (!p) return '';
+  const list = Array.isArray(p.images) && p.images.length ? p.images : (p.img ? [p.img] : []);
+  return list[i || 0] || svgArt(p);
+}
+/* Thẻ <img> dùng chung: có lazy-load + tự quay về ảnh minh họa nếu ảnh thật bị lỗi */
+function imgTag(p, cls, i) {
+  const fallback = svgArt(p);
+  return '<img class="' + (cls || 'pimg') + '" src="' + productImg(p, i).replace(/"/g, '&quot;') + '" alt="' + String(p.name || '').replace(/"/g, '&quot;') + '" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'' + fallback.replace(/'/g, '%27') + '\'">';
+}
