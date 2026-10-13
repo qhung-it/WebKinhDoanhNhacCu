@@ -81,31 +81,19 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus(OrderStatus.PROCESSING);
         order.getHistory().add(new OrderHistory(order, OrderStatus.PROCESSING, "Khách hàng"));
 
-        List<Product> changedProducts = new ArrayList<>();
         boolean orderSaved = false;
         try {
-            for (Map.Entry<String, Integer> entry : requestedStock.entrySet()) {
-                Product product = products.get(entry.getKey());
-                product.updateStock(-entry.getValue());
-                if (!productDAO.update(product)) throw new IllegalStateException("Không cập nhật được tồn kho: " + product.getProductName());
-                changedProducts.add(product);
-            }
             if (!orderDAO.save(order)) throw new IllegalStateException("Không lưu được đơn hàng");
             orderSaved = true;
             for (Map.Entry<String, Integer> entry : requestedStock.entrySet()) {
                 Product product = products.get(entry.getKey());
+                product.updateStock(-entry.getValue());
                 InventoryHistory record = new InventoryHistory(); record.setProduct(product); record.setOperation("ORDER");
                 record.setQuantityChange(-entry.getValue()); record.setStockBefore(product.getQuantity() + entry.getValue());
                 record.setStockAfter(product.getQuantity()); record.setNote("Order " + order.getOrderId()); record.setChangedBy("Khách hàng");
                 inventoryHistoryService.record(record);
             }
         } catch (RuntimeException e) {
-            if (!orderSaved) {
-                for (Product product : changedProducts) {
-                    product.updateStock(requestedStock.get(product.getProductId()));
-                    productDAO.update(product);
-                }
-            }
             throw e;
         }
         return true;

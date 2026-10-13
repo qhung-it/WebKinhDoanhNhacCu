@@ -1,3 +1,9 @@
+﻿-- Script tong hop de chuan bi du lieu test admin va user.
+-- Yeu cau: DB_WebNhac da co schema ung dung; khoi dong app mot lan truoc (Hibernate hbm2ddl.auto=update).
+-- Chay file nay trong SQL Server Management Studio; se nap catalog, bang user, du lieu mau va chuan hoa Unicode.
+-- Ma SOUNDORA10 trong sample-data duoc doi thanh SAMPLE10 de tranh trung ma catalog.
+
+-- ===== datajs-catalog-seed.sql =====
 -- Soundora catalog seed parsed from data.js; SQL Server / DB_WebNhac.
 USE DB_WebNhac;
 SET XACT_ABORT ON;
@@ -261,4 +267,361 @@ ELSE
         N'h sampling chân thực, hỗ trợ cổng tai nghe và kết nối USB"],"specs":[["Loại nhạc cụ","Piano điện"],["Số phím","88 phím"],["Độ đa âm","64 - 256 notes"],["Kết nối","USB, tai nghe, Pedal"],["Phụ kiện kèm theo","Adapter nguồn, pedal, giá nhạc"]]},"trong":{"features":["Cấu hình đầy đủ, sẵn sàng chơi ngay sau khi lắp đặt","Chất liệu bền bỉ, âm thanh vang và rõ"],"specs":[["Loại nhạc cụ","Trống / Cymbal"],["Chất liệu","Gỗ Poplar / Birch / Mesh"],["Cấu hình","Theo bộ tiêu chuẩn của hãng"],["Màu sắc","Theo từng phiên bản"],["Phụ kiện kèm theo","Dùi trống, ghế, chân pedal"]]},"organ":{"features":["Hàng trăm âm sắc và điệu nhạc có sẵn","Phù hợp học tập, luyện tập tại nhà và biểu diễn nhỏ"],"specs":[["Loại nhạc cụ","Organ điện tử"],["Số phím","61 phím"],["Âm sắc","400+ âm sắc"],["Điệu nhạc","100+ điệu nhạc"],["Phụ kiện kèm theo","Adapter, giá nhạc"]]},"ukulele":{"features":["Kích thước nhỏ gọn, dễ mang theo khi đi dã ngoại","Âm thanh vui tươi, dễ học cho người mới"],"specs":[["Loại nhạc cụ","Ukulele"],["Kích thước","Soprano / Concert"],["Dây đàn","Nylon 4 dây"],["Mặt đàn","Gỗ tuyển chọn"],["Phụ kiện kèm theo","Bao đàn, dây dự phòng"]]},"violin":{"features":["Gỗ được sấy kỹ, âm thanh sáng và đầy đặn","Bộ phụ kiện đầy đủ, sẵn sàng tập ngay"],"specs":[["Loại nhạc cụ","Violin"],["Kích thước","4/4"],["Mặt đàn","Gỗ vân sam (Spruce)"],["Lưng và cần","Gỗ thích (Maple)"],["Phụ kiện kèm theo","Hộp đàn, vĩ, nhựa thông"]]},"ken-sao":{"features":["Chất liệu bền, dễ vệ sinh và bảo quản","Phù hợp cho học sinh, sinh viên và người chơi nghiệp dư"],"specs":[["Loại nhạc cụ","Kèn / Sáo"],["Chất liệu","Nhựa ABS / Đồng thau"],["Âm vực","Theo chuẩn của hãng"],["Bảo hành","12 tháng"],["Phụ kiện kèm theo","Hộp đựng, dầu bôi trơn, khăn lau"]]},"phu-kien":{"features":["Phụ kiện chính hãng, độ bền cao","Tương thích với đa số nhạc cụ cùng loại"],"specs":[["Loại sản phẩm","Phụ kiện / Thiết bị âm thanh"],["Xuất xứ","Theo hãng sản xuất"],["Tình trạng","Mới 100%, nguyên seal"],["Bảo hành","6 - 12 tháng"],["Đóng gói","Hộp chính hãng"]]}},"tiers":[{"key":"thuong","name":"Thường","min":0,"discount":0,"color":"#8E8E93"},{"key":"thanh-vien","name":"Thành viên","min":5000000,"discount":2,"color":"#0984E3"},{"key":"vip","name":"VIP","min":20000000,"discount":5,"color":"#E1A200"}],"productPresentation":[{"id":1,"sku":"YAM-1001","emoji":"🎸","old":3990000,"rating":4.9,"reviews":128,"badge":"hot","sold":980,"isNew":false,"short":"Mặt đàn gỗ vân sam cho âm sáng, ngân vang chuẩn xác, bán chạy số 1 cho người mới."},{"id":2,"sku":"FEN-1002","emoji":"🎸","old":null,"rating":4.8,"reviews":64,"badge":null,"sold":210,"isNew":false,"short":"Huyền thoại Stratocaster với 3 single-coil cho âm thanh trong và cá tính."},{"id":3,"sku":"IBA-1003","emoji":"🎸","old":6990000,"rating":4.7,"reviews":52,"badge":"sale","sold":340,"isNew":false,"short":"Cần đàn mỏng, chơi solo nhanh, phù hợp rock và metal."},{"id":4,"sku":"TAY-1004","emoji":"🎸","old":null,"rating":4.9,"reviews":31,"badge":null,"sold":95,"isNew":false,"short":' +
         N'"Dáng đàn nhỏ gọn nhưng âm lượng lớn, thích hợp du lịch và thu âm."},{"id":5,"sku":"COR-1005","emoji":"🎸","old":2790000,"rating":4.6,"reviews":210,"badge":"hot","sold":1250,"isNew":false,"short":"Mức giá dễ tiếp cận nhưng chất lượng ổn định, âm thanh ấm áp."},{"id":6,"sku":"YAM-1006","emoji":"🎹","old":19900000,"rating":4.9,"reviews":96,"badge":"sale","sold":410,"isNew":false,"short":"Phím GHS cảm ứng lực, âm thanh sampling từ đàn grand piano CFIIIS."},{"id":7,"sku":"ROL-1007","emoji":"🎹","old":null,"rating":4.8,"reviews":47,"badge":null,"sold":180,"isNew":false,"short":"Động cơ âm thanh SuperNATURAL, kết nối Bluetooth MIDI."},{"id":8,"sku":"CAS-1008","emoji":"🎹","old":3990000,"rating":4.5,"reviews":143,"badge":null,"sold":760,"isNew":false,"short":"Gọn nhẹ, nhiều điệu nhạc, phù hợp tập luyện tại nhà."},{"id":9,"sku":"CAS-1009","emoji":"🎹","old":10990000,"rating":4.7,"reviews":58,"badge":"new","sold":120,"isNew":true,"short":"Thiết kế siêu mỏng, bàn phím phản hồi lực Smart Scaled."},{"id":10,"sku":"YAM-1010","emoji":"🎹","old":6790000,"rating":4.8,"reviews":175,"badge":"hot","sold":890,"isNew":false,"short":"622 âm sắc, 205 điệu nhạc, có chế độ học nhạc thông minh."},{"id":11,"sku":"ROL-1011","emoji":"🥁","old":17900000,"rating":4.7,"reviews":29,"badge":null,"sold":75,"isNew":false,"short":"Tập trống yên tĩnh trong căn hộ, mặt mesh cho cảm giác thật."},{"id":12,"sku":"PEA-1012","emoji":"🥁","old":14500000,"rating":4.6,"reviews":22,"badge":"sale","sold":60,"isNew":false,"short":"Bộ trống 5 món đầy đủ cymbal, hardware và ghế ngồi."},{"id":13,"sku":"ZIL-1013","emoji":"🥁","old":8900000,"rating":4.7,"reviews":25,"badge":null,"sold":48,"isNew":false,"short":"Bộ cymbal 3 món cho âm thanh sáng, rõ và bền."},{"id":14,"sku":"KAL-1014","emoji":"🪕","old":1590000,"rating":4.8,"reviews":301,"badge":"hot","sold":1600,"isNew":false,"short":"Gỗ Mahogany, âm ấm, đẹp mắt, bán chạy nhất dòng ukulele."},{"id":15,"sku":"COR-1015","emoji":"🪕","old":null,"rating":4.5,"reviews":89,"badge":null,"sold":430,"isNew":false,"short":"Size Concert dễ bấm hợp tay người lớn, giá tốt."},{"id":16,"sku":"YAM-1016","emoji":"🎻","old":7590000,"rating":4.8,"reviews":37,"badge":"new","sold":70,"isNew":true,"short":"Violin học viên cao cấp, thùng đàn gỗ thích cho âm sáng."},{"id":17,"sku":"STE-1017","emoji":"🎻","old":3790000,"rating":4.6,"reviews":66,"badge":null,"sold":210,"isNew":false,"short":"Chất lượng ổn định, được nhiều trường nhạc lựa chọn."},{"id":18,"sku":"YAM-1018","emoji":"🪈","old":250000,"rating":4.9,"reviews":520,"badge":"hot","sold":3800,"isNew":false,"short":"Sáo recorder chuẩn trường học, âm chuẩn, dễ thổi."},{"id":19,"sku":"YAM-1019","emoji":"🎷","old":27900000,"rating":4.8,"reviews":14,"badge":null,"sold":22,"isNew":false,"short":"Alto Sax cho người mới, phím nhẹ, dễ ra âm."},{"id":20,"sku":"YAM-1020","emoji":"🎺","old":null,"rating":4.7,"reviews":12,"badge":"new","sold":18,"isNew":true,"short":"Trumpet Bb cho học viên, thân đồng thau mạ vàng."},{"id":21,"sku":"MAR-1021","emoj' +
         N'i":"🔊","old":3590000,"rating":4.7,"reviews":88,"badge":"sale","sold":520,"isNew":false,"short":"Ampli 15W, 2 kênh, âm thanh rock kinh điển."},{"id":22,"sku":"BOS-1022","emoji":"🎚️","old":2690000,"rating":4.8,"reviews":120,"badge":null,"sold":640,"isNew":false,"short":"Tuner dạng pedal chính xác, màn hình sáng rõ trên sân khấu."},{"id":23,"sku":"D''A-1023","emoji":"🎼","old":250000,"rating":4.9,"reviews":860,"badge":"hot","sold":5400,"isNew":false,"short":"Bộ dây điện 10-46 chuẩn quốc tế, bền và sáng tiếng."},{"id":24,"sku":"DUN-1024","emoji":"🎵","old":90000,"rating":4.9,"reviews":1020,"badge":null,"sold":6100,"isNew":false,"short":"Chất liệu Tortex bền, bám tay, nhiều độ dày."},{"id":25,"sku":"GIB-1025","emoji":"🎸","old":null,"rating":4.9,"reviews":9,"badge":"new","sold":6,"isNew":true,"short":"Biểu tượng rock với humbucker mạnh mẽ, sustain dài."},{"id":26,"sku":"MAR-1026","emoji":"🔊","old":10990000,"rating":4.7,"reviews":41,"badge":null,"sold":130,"isNew":false,"short":"Loa Bluetooth thiết kế ampli cổ điển, âm thanh đa chiều."},{"id":27,"sku":"BOS-1027","emoji":"🔊","old":8990000,"rating":4.8,"reviews":55,"badge":"sale","sold":160,"isNew":false,"short":"Ampli 50W với nhiều hiệu ứng tích hợp, kết nối USB thu âm."}]}');
+COMMIT TRANSACTION;
+
+-- ===== user-data-tables.sql =====
+IF OBJECT_ID(N'dbo.wishlist_item', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.wishlist_item (
+        wishlist_item_id NVARCHAR(255) NOT NULL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        product_id VARCHAR(255) NOT NULL,
+        CONSTRAINT uq_wishlist_user_product UNIQUE (user_id, product_id),
+        CONSTRAINT fk_wishlist_user FOREIGN KEY (user_id) REFERENCES dbo.users(user_id),
+        CONSTRAINT fk_wishlist_product FOREIGN KEY (product_id) REFERENCES dbo.products(product_id)
+    );
+END;
+
+IF OBJECT_ID(N'dbo.contact_message', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.contact_message (
+        contact_id NVARCHAR(255) NOT NULL PRIMARY KEY,
+        full_name NVARCHAR(255) NOT NULL,
+        email NVARCHAR(255) NOT NULL,
+        phone NVARCHAR(64) NULL,
+        subject NVARCHAR(255) NOT NULL,
+        message NVARCHAR(4000) NOT NULL,
+        created_at DATETIME2 NOT NULL
+    );
+END;
+
+IF OBJECT_ID(N'dbo.newsletter_subscription', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.newsletter_subscription (
+        subscription_id NVARCHAR(255) NOT NULL PRIMARY KEY,
+        email NVARCHAR(255) NOT NULL UNIQUE,
+        created_at DATETIME2 NOT NULL
+    );
+END;
+
+-- Bổ sung các cột thiếu trên schema DB cũ trước khi nạp sample-data.
+IF COL_LENGTH(N'dbo.brand', N'origin') IS NULL
+    ALTER TABLE dbo.brand ADD origin NVARCHAR(100) NULL;
+IF COL_LENGTH(N'dbo.contact_message', N'status') IS NULL
+    ALTER TABLE dbo.contact_message ADD status NVARCHAR(30) NOT NULL CONSTRAINT df_contact_message_status_seed DEFAULT (N'Mới');
+IF COL_LENGTH(N'dbo.contact_message', N'internal_note') IS NULL
+    ALTER TABLE dbo.contact_message ADD internal_note NVARCHAR(MAX) NULL;
+IF COL_LENGTH(N'dbo.orders', N'note') IS NULL
+    ALTER TABLE dbo.orders ADD note NVARCHAR(500) NULL;
+IF COL_LENGTH(N'dbo.products', N'sku') IS NULL
+    ALTER TABLE dbo.products ADD sku NVARCHAR(50) NULL;
+IF COL_LENGTH(N'dbo.products', N'short_description') IS NULL
+    ALTER TABLE dbo.products ADD short_description NVARCHAR(500) NULL;
+IF COL_LENGTH(N'dbo.products', N'old_price') IS NULL
+    ALTER TABLE dbo.products ADD old_price DECIMAL(19,2) NULL;
+IF COL_LENGTH(N'dbo.products', N'badge') IS NULL
+    ALTER TABLE dbo.products ADD badge NVARCHAR(10) NULL;
+IF COL_LENGTH(N'dbo.products', N'emoji') IS NULL
+    ALTER TABLE dbo.products ADD emoji NVARCHAR(8) NULL;
+IF COL_LENGTH(N'dbo.products', N'is_new') IS NULL
+    ALTER TABLE dbo.products ADD is_new BIT NULL;
+IF COL_LENGTH(N'dbo.products', N'active') IS NULL
+    ALTER TABLE dbo.products ADD active BIT NULL;
+IF COL_LENGTH(N'dbo.order_line_item', N'unit_price') IS NULL
+    ALTER TABLE dbo.order_line_item ADD unit_price DECIMAL(19,2) NULL;
+IF COL_LENGTH(N'dbo.products', N'images') IS NULL
+    ALTER TABLE dbo.products ADD images NVARCHAR(2000) NULL;
+GO
+
+-- ===== sample-data.sql =====
+/*
+  Du lieu mau cho SQL Server / DB_WebNhac.
+  Chay sau khi ung dung da tao schema (hibernate.hbm2ddl.auto=update).
+  Script giu lai tai khoan admin-001 neu da ton tai; moi bang duoc seed 5 dong.
+  Có thể chạy lại sau bản seed cũ để cập nhật mã khuyến mãi. Khóa sample-* là cố định.
+*/
+-- Đồng bộ CHECK constraint cũ của orders với các trạng thái OrderStatus trong ứng dụng.
+DECLARE @orderStatusConstraint SYSNAME;
+SELECT TOP (1) @orderStatusConstraint = name
+FROM sys.check_constraints
+WHERE parent_object_id = OBJECT_ID(N'dbo.orders')
+  AND definition LIKE N'%order_status%';
+IF @orderStatusConstraint IS NOT NULL
+    EXEC(N'ALTER TABLE dbo.orders DROP CONSTRAINT ' + QUOTENAME(@orderStatusConstraint));
+IF NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID(N'dbo.orders')
+      AND name = N'CK_orders_order_status'
+)
+    ALTER TABLE dbo.orders WITH CHECK ADD CONSTRAINT CK_orders_order_status
+        CHECK (order_status IN (N'PROCESSING', N'CONFIRMED', N'SHIPPING', N'COMPLETED', N'CANCELLED', N'PENDING', N'FAILED'));
+
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+
+-- Thêm cột nếu schema cũ được tạo trước khi có mã khuyến mãi.
+IF COL_LENGTH('dbo.promotion', 'coupon_code') IS NULL
+    ALTER TABLE dbo.promotion ADD coupon_code VARCHAR(50) NULL;
+IF COL_LENGTH('dbo.orders', 'coupon_code') IS NULL
+    ALTER TABLE dbo.orders ADD coupon_code VARCHAR(50) NULL;
+
+-- Nếu đã chạy bản seed cũ, cập nhật mã cho các khuyến mãi hiện có.
+UPDATE promotion SET coupon_code = CASE promotion_id
+    WHEN 'sample-promo-001' THEN 'SAMPLE10'
+    WHEN 'sample-promo-002' THEN 'JBL10'
+    WHEN 'sample-promo-003' THEN 'WELCOME200K'
+    WHEN 'sample-promo-004' THEN 'GOLD12'
+    WHEN 'sample-promo-005' THEN 'ENDMONTH150'
+    ELSE coupon_code END
+WHERE promotion_id IN ('sample-promo-001', 'sample-promo-002', 'sample-promo-003', 'sample-promo-004', 'sample-promo-005');
+
+-- Bỏ qua insert mẫu nếu bộ sample đã được nạp trước đó.
+IF NOT EXISTS (SELECT 1 FROM products WHERE product_id = 'sample-product-001')
+BEGIN
+
+-- Bảng độc lập / bảng cha
+INSERT INTO customer_rank (rank_id, rank_name, min_spending) VALUES
+('rank-bronze', 'BRONZE', 100000000),
+('rank-silver', 'SILVER', 150000000),
+('rank-gold', 'GOLD', 250000000),
+('rank-vip', 'VIP', 500000000),
+('rank-vip-demo', 'VIP', 750000000);
+
+IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = 'admin-001' OR email = 'admin@soundora.vn')
+    INSERT INTO users (user_id, full_name, email, password, phone, role, rank_id)
+    VALUES ('admin-001', N'Quản trị viên', 'admin@soundora.vn', 'admin123', '0900000000', 'ADMIN', 'rank-vip');
+
+INSERT INTO users (user_id, full_name, email, password, phone, role, rank_id) VALUES
+('sample-user-002', N'Nguyễn Minh Anh', 'minhanh@example.com', 'user123', '0900000002', 'USER', 'rank-bronze'),
+('sample-user-003', N'Trần Hoàng Nam', 'hoangnam@example.com', 'user123', '0900000003', 'USER', 'rank-silver'),
+('sample-user-004', N'Lê Thu Hà', 'thuha@example.com', 'user123', '0900000004', 'USER', 'rank-gold'),
+('sample-user-005', N'Phạm Quốc Bảo', 'quocbao@example.com', 'user123', '0900000005', 'USER', 'rank-vip-demo');
+
+INSERT INTO category (category_id, category_name, status) VALUES
+('cat-headphones', N'Tai nghe', 1),
+('cat-speakers', N'Loa', 1),
+('cat-microphones', N'Micro', 1),
+('cat-amplifiers', N'Ampli', 1),
+('cat-accessories', N'Phụ kiện', 1);
+
+INSERT INTO brand (brand_id, brand_name, origin, description) VALUES
+('brand-sony', N'Sony', N'Nhật Bản', N'Thiết bị âm thanh Sony'),
+('brand-jbl', N'JBL', N'Hoa Kỳ', N'Loa và tai nghe JBL'),
+('brand-bose', N'Bose', N'Hoa Kỳ', N'Thiết bị âm thanh Bose'),
+('brand-audio-technica', N'Audio-Technica', N'Nhật Bản', N'Tai nghe và micro'),
+('brand-sennheiser', N'Sennheiser', N'Đức', N'Thiết bị âm thanh Sennheiser');
+
+INSERT INTO products (product_id, product_name, sku, short_description, description, price, old_price, quantity, badge, emoji, is_new, active, image, images, brand_id, category_id) VALUES
+('sample-product-001', N'Tai nghe Sony WH-1000XM5', 'SON-1001', N'Tai nghe chống ồn cao cấp', N'Tai nghe không dây chống ồn chủ động.', 8490000, 9990000, 20, 'hot', N'🎧', 1, 1, NULL, NULL, 'brand-sony', 'cat-headphones'),
+('sample-product-002', N'Loa JBL Flip 6', 'JBL-1002', N'Loa Bluetooth chống nước', N'Loa di động nhỏ gọn, âm thanh mạnh mẽ.', 2490000, 2990000, 35, 'sale', N'🔊', 0, 1, NULL, NULL, 'brand-jbl', 'cat-speakers'),
+('sample-product-003', N'Tai nghe Bose QC Ultra', 'BOS-1003', N'Tai nghe chống ồn êm ái', N'Tai nghe Bluetooth với chống ồn cao cấp.', 9990000, 10990000, 12, 'new', N'🎧', 1, 1, NULL, NULL, 'brand-bose', 'cat-headphones'),
+('sample-product-004', N'Micro Audio-Technica AT2020', 'AUD-1004', N'Micro thu âm condenser', N'Micro dành cho phòng thu và sáng tạo nội dung.', 2890000, 3290000, 18, NULL, N'🎙️', 0, 1, NULL, NULL, 'brand-audio-technica', 'cat-microphones'),
+('sample-product-005', N'Tai nghe Sennheiser HD 560S', 'SEN-1005', N'Tai nghe kiểm âm mở', N'Tai nghe có dây cho trải nghiệm nghe chi tiết.', 4590000, 4990000, 9, NULL, N'🎧', 0, 1, NULL, NULL, 'brand-sennheiser', 'cat-headphones');
+
+INSERT INTO promotion (promotion_id, promotion_name, coupon_code, discount_type, discount_value, start_date_time, end_date_time) VALUES
+('sample-promo-001', N'Ưu đãi khách hàng mới', 'SAMPLE10', 'PERCENTAGE', 10, DATEADD(day,-10,GETDATE()), DATEADD(day,30,GETDATE())),
+('sample-promo-002', N'Tuần lễ âm thanh', 'JBL10', 'PERCENTAGE', 10, DATEADD(day,-5,GETDATE()), DATEADD(day,20,GETDATE())),
+('sample-promo-003', N'Giảm giá tai nghe', 'WELCOME200K', 'FIXED_AMOUNT', 200000, DATEADD(day,-2,GETDATE()), DATEADD(day,15,GETDATE())),
+('sample-promo-004', N'Ưu đãi thành viên vàng', 'GOLD12', 'PERCENTAGE', 12, DATEADD(day,-1,GETDATE()), DATEADD(day,25,GETDATE())),
+('sample-promo-005', N'Ưu đãi cuối tháng', 'ENDMONTH150', 'FIXED_AMOUNT', 150000, DATEADD(day,-1,GETDATE()), DATEADD(day,35,GETDATE()));
+
+INSERT INTO site_setting (setting_id, free_shipping_from, shipping_fee, updated_at) VALUES
+('default', 500000, 30000, GETDATE()),
+('sample-setting-2', 600000, 25000, GETDATE()),
+('sample-setting-3', 700000, 20000, GETDATE()),
+('sample-setting-4', 800000, 15000, GETDATE()),
+('sample-setting-5', 900000, 10000, GETDATE());
+
+-- Dữ liệu nội dung không phụ thuộc đơn hàng
+INSERT INTO contact_message (contact_id, full_name, email, phone, subject, message, status, internal_note, created_at) VALUES
+('sample-contact-001', N'Nguyễn Minh Anh', 'minhanh@example.com', '0900000002', N'Hỏi về sản phẩm', N'Tai nghe này có hỗ trợ kết nối Bluetooth nhiều thiết bị không?', N'Mới', NULL, DATEADD(day,-4,GETDATE())),
+('sample-contact-002', N'Trần Hoàng Nam', 'hoangnam@example.com', '0900000003', N'Tình trạng đơn hàng', N'Tôi muốn kiểm tra tiến độ giao đơn hàng.', N'Đang xử lý', N'Đã tiếp nhận yêu cầu.', DATEADD(day,-3,GETDATE())),
+('sample-contact-003', N'Lê Thu Hà', 'thuha@example.com', '0900000004', N'Đổi trả', N'Sản phẩm còn trong thời hạn đổi trả không?', N'Mới', NULL, DATEADD(day,-2,GETDATE())),
+('sample-contact-004', N'Phạm Quốc Bảo', 'quocbao@example.com', '0900000005', N'Tư vấn loa', N'Nhờ tư vấn loa phù hợp cho phòng khách.', N'Đã phản hồi', N'Đã gửi thông tin sản phẩm.', DATEADD(day,-1,GETDATE())),
+('sample-contact-005', N'Hoàng Yến', 'yen@example.com', '0900000006', N'Bảo hành', N'Thời gian bảo hành của micro là bao lâu?', N'Mới', NULL, GETDATE());
+
+INSERT INTO news_article (article_id, title, category, excerpt, content, emoji, author, color, color2, published, published_at, created_at) VALUES
+('sample-news-001', N'Cách chọn tai nghe phù hợp', N'Tư vấn', N'Một vài tiêu chí giúp bạn chọn tai nghe.', N'Xác định nhu cầu, kiểu đeo và ngân sách trước khi chọn tai nghe.', N'🎧', N'Soundora', '#273469', '#4f6dff', 1, DATEADD(day,-8,GETDATE()), DATEADD(day,-9,GETDATE())),
+('sample-news-002', N'Bảo quản loa Bluetooth', N'Hướng dẫn', N'Mẹo giúp loa bền và hoạt động tốt.', N'Tránh nhiệt độ cao, vệ sinh đúng cách và sạc theo hướng dẫn.', N'🔊', N'Soundora', '#164e63', '#22a6b3', 1, DATEADD(day,-6,GETDATE()), DATEADD(day,-7,GETDATE())),
+('sample-news-003', N'Tìm hiểu về chống ồn chủ động', N'Công nghệ', N'ANC hoạt động như thế nào?', N'Công nghệ ANC dùng micro và tín hiệu âm thanh để giảm tiếng ồn môi trường.', N'🎶', N'Soundora', '#4c1d95', '#8b5cf6', 1, DATEADD(day,-4,GETDATE()), DATEADD(day,-5,GETDATE())),
+('sample-news-004', N'Thiết lập góc thu âm tại nhà', N'Hướng dẫn', N'Bắt đầu với thiết bị thu âm cơ bản.', N'Chọn micro phù hợp, đặt micro đúng vị trí và giảm âm vang trong phòng.', N'🎙️', N'Soundora', '#7c2d12', '#f97316', 1, DATEADD(day,-2,GETDATE()), DATEADD(day,-3,GETDATE())),
+('sample-news-005', N'Chọn loa cho không gian nhỏ', N'Tư vấn', N'Ưu tiên kích thước và cách bố trí loa.', N'Đo diện tích phòng và xác định nhu cầu nghe trước khi chọn công suất loa.', N'🎵', N'Soundora', '#14532d', '#22c55e', 0, NULL, GETDATE());
+
+INSERT INTO admin_audit_log (audit_id, actor_email, action, detail, created_at) VALUES
+('sample-audit-001', 'admin@soundora.vn', N'Tạo sản phẩm', N'Tạo sản phẩm mẫu sample-product-001', DATEADD(day,-4,GETDATE())),
+('sample-audit-002', 'admin@soundora.vn', N'Cập nhật danh mục', N'Cập nhật danh mục cat-headphones', DATEADD(day,-3,GETDATE())),
+('sample-audit-003', 'admin@soundora.vn', N'Tạo khuyến mãi', N'Tạo chương trình sample-promo-001', DATEADD(day,-2,GETDATE())),
+('sample-audit-004', 'admin@soundora.vn', N'Phản hồi liên hệ', N'Đã phản hồi sample-contact-004', DATEADD(day,-1,GETDATE())),
+('sample-audit-005', 'admin@soundora.vn', N'Cập nhật cài đặt', N'Cập nhật phí giao hàng', GETDATE());
+
+-- Bảng phụ thuộc người dùng / sản phẩm / đơn hàng
+INSERT INTO cart (cart_id, user_id) VALUES
+('sample-cart-001', 'admin-001'),
+('sample-cart-002', 'sample-user-002'),
+('sample-cart-003', 'sample-user-003'),
+('sample-cart-004', 'sample-user-004'),
+('sample-cart-005', 'sample-user-005');
+
+INSERT INTO cart_line_item (cart_line_item_id, cart_id, product_id, quantity) VALUES
+('sample-cart-line-001', 'sample-cart-001', 'sample-product-001', 1),
+('sample-cart-line-002', 'sample-cart-002', 'sample-product-002', 2),
+('sample-cart-line-003', 'sample-cart-003', 'sample-product-003', 1),
+('sample-cart-line-004', 'sample-cart-004', 'sample-product-004', 1),
+('sample-cart-line-005', 'sample-cart-005', 'sample-product-005', 2);
+
+INSERT INTO orders (order_id, order_date, subtotal, discount, total_amount, shipping_address, order_status, note, shipping_fee, user_id) VALUES
+('sample-order-001', DATEADD(day,-10,GETDATE()), 8490000, 0, 8520000, N'12 Nguyễn Huệ, Quận 1, TP.HCM', 'COMPLETED', N'Giao giờ hành chính', 30000, 'sample-user-002'),
+('sample-order-002', DATEADD(day,-7,GETDATE()), 4980000, 0, 5010000, N'20 Lê Lợi, Quận 1, TP.HCM', 'SHIPPING', NULL, 30000, 'sample-user-003'),
+('sample-order-003', DATEADD(day,-5,GETDATE()), 9990000, 0, 10020000, N'5 Trần Hưng Đạo, Quận 5, TP.HCM', 'CONFIRMED', NULL, 30000, 'sample-user-004'),
+('sample-order-004', DATEADD(day,-3,GETDATE()), 2890000, 0, 2920000, N'88 Điện Biên Phủ, Bình Thạnh, TP.HCM', 'PROCESSING', NULL, 30000, 'sample-user-005'),
+('sample-order-005', DATEADD(day,-1,GETDATE()), 4590000, 0, 4620000, N'7 Phan Chu Trinh, Hải Châu, Đà Nẵng', 'CANCELLED', N'Khách yêu cầu hủy', 30000, 'sample-user-002');
+
+INSERT INTO order_line_item (order_line_item_id, product_id, unit_price, quantity, order_id) VALUES
+('sample-order-line-001', 'sample-product-001', 8490000, 1, 'sample-order-001'),
+('sample-order-line-002', 'sample-product-002', 2490000, 2, 'sample-order-002'),
+('sample-order-line-003', 'sample-product-003', 9990000, 1, 'sample-order-003'),
+('sample-order-line-004', 'sample-product-004', 2890000, 1, 'sample-order-004'),
+('sample-order-line-005', 'sample-product-005', 4590000, 1, 'sample-order-005');
+
+INSERT INTO order_history (history_id, order_id, status, changed_at, changed_by) VALUES
+('sample-order-history-001', 'sample-order-001', 'COMPLETED', DATEADD(day,-8,GETDATE()), N'admin@soundora.vn'),
+('sample-order-history-002', 'sample-order-002', 'SHIPPING', DATEADD(day,-5,GETDATE()), N'admin@soundora.vn'),
+('sample-order-history-003', 'sample-order-003', 'CONFIRMED', DATEADD(day,-4,GETDATE()), N'admin@soundora.vn'),
+('sample-order-history-004', 'sample-order-004', 'PROCESSING', DATEADD(day,-3,GETDATE()), N'admin@soundora.vn'),
+('sample-order-history-005', 'sample-order-005', 'CANCELLED', DATEADD(day,-1,GETDATE()), N'admin@soundora.vn');
+
+INSERT INTO payment (payment_id, payment_method, amount, payment_date, payment_status, order_id) VALUES
+('sample-payment-001', 'CASH', 8520000, DATEADD(day,-8,GETDATE()), 'COMPLETED', 'sample-order-001'),
+('sample-payment-002', 'E_WALLET', 5010000, NULL, 'PENDING', 'sample-order-002'),
+('sample-payment-003', 'E_WALLET', 10020000, NULL, 'PENDING', 'sample-order-003'),
+('sample-payment-004', 'CASH', 2920000, NULL, 'PENDING', 'sample-order-004'),
+('sample-payment-005', 'CASH', 4620000, NULL, 'REFUNDED', 'sample-order-005');
+
+INSERT INTO deposit (deposit_id, amount, deposit_date, deposit_status, order_id) VALUES
+('sample-deposit-001', 2556000, DATEADD(day,-8,GETDATE()), 'COMPLETED', 'sample-order-001'),
+('sample-deposit-002', 1503000, NULL, 'PENDING', 'sample-order-002'),
+('sample-deposit-003', 3006000, NULL, 'PENDING', 'sample-order-003'),
+('sample-deposit-004', 876000, NULL, 'PENDING', 'sample-order-004'),
+('sample-deposit-005', 0, DATEADD(day,-1,GETDATE()), 'REFUNDED', 'sample-order-005');
+
+INSERT INTO review (review_id, rating, comment, approved, user_id, product_id, order_id) VALUES
+('sample-review-001', 5, N'Chống ồn tốt, đeo thoải mái.', 1, 'sample-user-002', 'sample-product-001', 'sample-order-001'),
+('sample-review-002', 4, N'Loa gọn và âm thanh tốt.', 1, 'sample-user-003', 'sample-product-002', 'sample-order-002'),
+('sample-review-003', 5, N'Âm thanh chi tiết, hoàn thiện đẹp.', 0, 'sample-user-004', 'sample-product-003', 'sample-order-003'),
+('sample-review-004', 4, N'Thu âm rõ, dễ sử dụng.', 1, 'sample-user-005', 'sample-product-004', 'sample-order-004'),
+('sample-review-005', 5, N'Nghe nhạc lâu không mỏi tai.', 0, 'sample-user-002', 'sample-product-005', 'sample-order-005');
+
+INSERT INTO inventory_history (inventory_history_id, product_id, operation, quantity_change, stock_before, stock_after, note, changed_by, changed_at) VALUES
+('sample-inventory-001', 'sample-product-001', 'STOCK_IN', 20, 0, 20, N'Nhập tồn kho ban đầu', 'admin@soundora.vn', DATEADD(day,-8,GETDATE())),
+('sample-inventory-002', 'sample-product-002', 'STOCK_IN', 35, 0, 35, N'Nhập tồn kho ban đầu', 'admin@soundora.vn', DATEADD(day,-7,GETDATE())),
+('sample-inventory-003', 'sample-product-003', 'ADJUSTMENT', -2, 14, 12, N'Điều chỉnh sau kiểm kê', 'admin@soundora.vn', DATEADD(day,-5,GETDATE())),
+('sample-inventory-004', 'sample-product-004', 'STOCK_IN', 18, 0, 18, N'Nhập tồn kho ban đầu', 'admin@soundora.vn', DATEADD(day,-3,GETDATE())),
+('sample-inventory-005', 'sample-product-005', 'ORDER', -1, 10, 9, N'Xuất kho theo đơn mẫu', 'admin@soundora.vn', DATEADD(day,-1,GETDATE()));
+
+-- Bảng liên kết many-to-many
+INSERT INTO promotion_product (promotion_id, product_id) VALUES
+('sample-promo-001', 'sample-product-001'),
+('sample-promo-002', 'sample-product-002'),
+('sample-promo-003', 'sample-product-003'),
+('sample-promo-004', 'sample-product-004'),
+('sample-promo-005', 'sample-product-005');
+
+INSERT INTO promotion_customer_rank (promotion_id, rank_id) VALUES
+('sample-promo-001', 'rank-bronze'),
+('sample-promo-002', 'rank-silver'),
+('sample-promo-003', 'rank-gold'),
+('sample-promo-004', 'rank-vip-demo'),
+('sample-promo-005', 'rank-vip-demo');
+
+END;
+
+-- GOLD12 dùng được bởi tài khoản mẫu có rank-vip-demo; đồng bộ cả seed cũ.
+DELETE FROM promotion_customer_rank WHERE promotion_id = 'sample-promo-004';
+INSERT INTO promotion_customer_rank (promotion_id, rank_id)
+VALUES ('sample-promo-004', 'rank-vip-demo');
+
+COMMIT TRANSACTION;
+
+-- Kiểm tra dữ liệu mẫu: một SELECT cho mỗi entity/table
+SELECT * FROM admin_audit_log;
+SELECT * FROM brand;
+SELECT * FROM cart;
+SELECT * FROM cart_line_item;
+SELECT * FROM category;
+SELECT * FROM contact_message;
+SELECT * FROM customer_rank;
+SELECT * FROM deposit;
+SELECT * FROM inventory_history;
+SELECT * FROM news_article;
+SELECT * FROM orders;
+SELECT * FROM order_history;
+SELECT * FROM order_line_item;
+SELECT * FROM payment;
+SELECT * FROM products;
+SELECT * FROM promotion;
+SELECT * FROM review;
+SELECT * FROM site_setting;
+SELECT * FROM users;
+
+-- Hai bảng liên kết many-to-many của Promotion
+SELECT * FROM promotion_product;
+SELECT * FROM promotion_customer_rank;
+
+-- ===== unicode-text-columns.sql =====
+-- Chuyển các cột chứa nội dung/ngôn ngữ người dùng sang NVARCHAR trên SQL Server.
+-- Chạy trong DB_WebNhac. Việc đổi kiểu không thể khôi phục ký tự đã bị lưu thành '?';
+-- với dữ liệu danh mục, chạy lại datajs-catalog-seed.sql sau script này.
+USE DB_WebNhac;
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+
+IF OBJECT_ID(N'dbo.products', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.products', N'product_name') IS NOT NULL
+        ALTER TABLE dbo.products ALTER COLUMN product_name NVARCHAR(255) NOT NULL;
+    IF COL_LENGTH(N'dbo.products', N'description') IS NOT NULL
+        ALTER TABLE dbo.products ALTER COLUMN description NVARCHAR(MAX) NULL;
+END;
+
+IF OBJECT_ID(N'dbo.brand', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.brand', N'brand_name') IS NOT NULL
+        ALTER TABLE dbo.brand ALTER COLUMN brand_name NVARCHAR(255) NULL;
+    IF COL_LENGTH(N'dbo.brand', N'description') IS NOT NULL
+        ALTER TABLE dbo.brand ALTER COLUMN description NVARCHAR(MAX) NULL;
+END;
+
+IF OBJECT_ID(N'dbo.category', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.category', N'category_name') IS NOT NULL
+    ALTER TABLE dbo.category ALTER COLUMN category_name NVARCHAR(255) NULL;
+
+IF OBJECT_ID(N'dbo.users', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.users', N'full_name') IS NOT NULL
+        ALTER TABLE dbo.users ALTER COLUMN full_name NVARCHAR(255) NOT NULL;
+    IF COL_LENGTH(N'dbo.users', N'address') IS NOT NULL
+        ALTER TABLE dbo.users ALTER COLUMN address NVARCHAR(1000) NULL;
+END;
+
+IF OBJECT_ID(N'dbo.orders', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.orders', N'shipping_address') IS NOT NULL
+    ALTER TABLE dbo.orders ALTER COLUMN shipping_address NVARCHAR(1000) NULL;
+
+IF OBJECT_ID(N'dbo.review', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.review', N'comment') IS NOT NULL
+    ALTER TABLE dbo.review ALTER COLUMN comment NVARCHAR(MAX) NULL;
+
+IF OBJECT_ID(N'dbo.promotion', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.promotion', N'promotion_name') IS NOT NULL
+        ALTER TABLE dbo.promotion ALTER COLUMN promotion_name NVARCHAR(255) NULL;
+    IF COL_LENGTH(N'dbo.promotion', N'description') IS NOT NULL
+        ALTER TABLE dbo.promotion ALTER COLUMN description NVARCHAR(500) NULL;
+END;
+
+-- Các bảng này vốn tạo đúng Unicode; giữ các ALTER ở đây để sửa DB cũ nếu cột bị tạo sai kiểu.
+IF OBJECT_ID(N'dbo.contact_message', N'U') IS NOT NULL
+BEGIN
+    ALTER TABLE dbo.contact_message ALTER COLUMN full_name NVARCHAR(255) NOT NULL;
+    ALTER TABLE dbo.contact_message ALTER COLUMN subject NVARCHAR(255) NOT NULL;
+    ALTER TABLE dbo.contact_message ALTER COLUMN message NVARCHAR(4000) NOT NULL;
+END;
+
 COMMIT TRANSACTION;

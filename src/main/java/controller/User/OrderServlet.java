@@ -15,6 +15,7 @@ import model.entity.CartLineItem;
 import model.entity.Order;
 import model.entity.OrderLineItem;
 import model.entity.Payment;
+import model.entity.Product;
 import model.entity.Promotion;
 import model.entity.User;
 import model.dao.impl.PromotionDAOImpl;
@@ -102,6 +103,15 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
             send(response, HttpServletResponse.SC_BAD_REQUEST, new ApiMessage("Thiếu địa chỉ giao hàng"));
             return;
         }
+        Cart cart = carts.getGioHangTheoUser(user.getUserId());
+        if (cart == null || cart.getCartLineItems().isEmpty()) {
+            cart = cartFromCheckoutRequest(request);
+        }
+        if (cart == null || cart.getCartLineItems().isEmpty()) {
+            send(response, HttpServletResponse.SC_BAD_REQUEST, new ApiMessage("Giỏ hàng đang trống"));
+            return;
+        }
+
         user.setAddress(address);
         if (!users.suaThongTin(user)) {
             send(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
@@ -109,12 +119,6 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
             return;
         }
         request.getSession().setAttribute("user", user);
-        Cart cart = carts.getGioHangTheoUser(user.getUserId());
-        if (cart == null || cart.getCartLineItems().isEmpty()) {
-            send(response, HttpServletResponse.SC_BAD_REQUEST, new ApiMessage("Giỏ hàng đang trống"));
-            return;
-        }
-
         BigDecimal subtotal = BigDecimal.ZERO;
         for (CartLineItem item : cart.getCartLineItems()) {
             if (item.getProduct() != null && item.getQuantity() > 0) {
@@ -204,6 +208,37 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
         carts.xoaTatCa(user.getUserId());
         Map<String, Object> result = orderSummary(order);
         send(response, HttpServletResponse.SC_CREATED, result);
+    }
+
+    private Cart cartFromCheckoutRequest(HttpServletRequest request) {
+        String rawItems = request.getParameter("items");
+        if (rawItems == null || rawItems.isBlank()) return null;
+
+        try {
+            com.google.gson.JsonArray rows = com.google.gson.JsonParser.parseString(rawItems).getAsJsonArray();
+            if (rows.isEmpty()) return null;
+
+            Cart cart = new Cart();
+            cart.setCartId(UUID.randomUUID().toString());
+            for (com.google.gson.JsonElement row : rows) {
+                if (!row.isJsonObject()) return null;
+                com.google.gson.JsonObject item = row.getAsJsonObject();
+                String productId = item.get("productId").getAsString();
+                int quantity = item.get("quantity").getAsInt();
+                Product product = products.findById(productId);
+                if (product == null || quantity <= 0 || product.getQuantity() < quantity) return null;
+
+                CartLineItem line = new CartLineItem();
+                line.setCartLineItemId(UUID.randomUUID().toString());
+                line.setCart(cart);
+                line.setProduct(product);
+                line.setQuantity(quantity);
+                cart.addItem(line);
+            }
+            return cart;
+        } catch (RuntimeException exception) {
+            return null;
+        }
     }
 
     private BigDecimal calculateShippingFee(BigDecimal subtotal, boolean couponFreeShipping) {

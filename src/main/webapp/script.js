@@ -1681,6 +1681,10 @@ function initCheckout() {
         address: addr,
         paymentMethod: $('input[name="pay"]:checked').value,
         couponCode: calcTotals().code,
+        items: JSON.stringify(cart.map((item) => {
+          const product = byId(item.id);
+          return product ? { productId: product.dbId || product.id, quantity: item.qty } : null;
+        }).filter(Boolean)),
       });
       sessionStorage.setItem("soundora_last_order", JSON.stringify({
         ...order,
