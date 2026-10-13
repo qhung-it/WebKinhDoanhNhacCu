@@ -36,6 +36,11 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public List<Product> getTatCaSanPham() {
+        return productDAO.findAll();
+    }
+
+    @Override
     public List<Product> locSanPham(String keyword) {
         return productDAO.filter(keyword);
     }

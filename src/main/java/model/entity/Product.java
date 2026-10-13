@@ -1,6 +1,7 @@
 package model.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -13,10 +14,12 @@ public class Product {
     @Column(name = "product_id")
     private String productId;
 
+    @Nationalized
     @Column(name = "product_name", nullable = false)
     private String productName;
 
-    @Column(name = "description")
+    @Nationalized
+    @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
     private String  description;
 
     @Column(name = "price")

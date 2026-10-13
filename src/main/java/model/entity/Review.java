@@ -1,6 +1,7 @@
 package model.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Nationalized;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
@@ -16,7 +17,8 @@ public class Review {
     @Max(5)
     private int rating;
 
-    @Column(name = "comment")
+    @Nationalized
+    @Column(name = "comment", columnDefinition = "NVARCHAR(MAX)")
     private String comment;
 
     @ManyToOne(fetch = FetchType.LAZY)

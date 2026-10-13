@@ -3,6 +3,7 @@ package model.entity;
 import jakarta.persistence.*;
 import model.DiscountType;
 import model.OrderStatus;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,10 +26,17 @@ public class Order {
     @Column(name = "discount")
     private BigDecimal discount;
 
+    @Column(name = "shipping_fee")
+    private BigDecimal shippingFee = BigDecimal.ZERO;
+
+    @Column(name = "promotion_code")
+    private String promotionCode;
+
     @Column(name = "total_amount")
     private BigDecimal totalAmount;
 
-    @Column(name = "shipping_address")
+    @Nationalized
+    @Column(name = "shipping_address", length = 1000)
     private String shippingAddress;
 
     @Enumerated(EnumType.STRING)
@@ -44,7 +52,7 @@ public class Order {
 
     @OneToMany(
             mappedBy = "order",
-            cascade = CascadeType.REMOVE,
+            cascade = {CascadeType.PERSIST, CascadeType.REMOVE},
             orphanRemoval = true,
             fetch = FetchType.LAZY
     )
@@ -97,6 +105,20 @@ public class Order {
     public void setDiscount(BigDecimal discount) {
         this.discount = discount;
     }
+
+    public BigDecimal getShippingFee() {
+        return shippingFee;
+    }
+    
+    public void setShippingFee(BigDecimal shippingFee) {
+        this.shippingFee = shippingFee;
+    }
+    
+    public String getPromotionCode() {
+        return promotionCode;
+    }
+    
+    public void setPromotionCode(String promotionCode) { this.promotionCode = promotionCode; }
 
     public BigDecimal getTotalAmount() {
         return totalAmount;

@@ -20,15 +20,14 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void taoDonHang(Order order) {
+    public boolean taoDonHang(Order order) {
 
         if (order == null) {
-            return;
+            return false;
         }
 
-        if (order.getOrderLineItems() == null ||
-                order.getOrderLineItems().isEmpty()) {
-            return;
+        if (order.getOrderLineItems() == null || order.getOrderLineItems().isEmpty()) {
+            return false;
         }
 
         BigDecimal subtotal = BigDecimal.ZERO;
@@ -63,11 +62,14 @@ public class OrderServiceImpl implements OrderService {
 
         order.setDiscount(discount);
 
-        BigDecimal totalAmount = subtotal.subtract(discount);
+        BigDecimal shippingFee = order.getShippingFee() == null || order.getShippingFee().signum() < 0
+                ? BigDecimal.ZERO : order.getShippingFee();
+        order.setShippingFee(shippingFee);
+        BigDecimal totalAmount = subtotal.subtract(discount).add(shippingFee);
 
         order.setTotalAmount(totalAmount);
 
-        orderDAO.save(order);
+        return orderDAO.save(order);
     }
 
     @Override

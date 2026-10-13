@@ -95,7 +95,7 @@ public class ReviewDAOImpl implements ReviewDAO {
 
         try {
             return em.createQuery(
-                            "SELECT r FROM Review r " +
+                            "SELECT r FROM Review r JOIN FETCH r.user " +
                                     "WHERE r.product.productId = :productId",
                             Review.class
                     ).setParameter("productId", productId)

@@ -90,6 +90,22 @@ public class PromotionDAOImpl implements PromotionDAO {
     }
 
     @Override
+    public Promotion findByCode(String couponCode) {
+        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+        try {
+            List<Promotion> rows = em.createQuery(
+                            "SELECT p FROM Promotion p WHERE UPPER(p.couponCode) = :code",
+                            Promotion.class)
+                    .setParameter("code", couponCode.toUpperCase(java.util.Locale.ROOT))
+                    .setMaxResults(1)
+                    .getResultList();
+            return rows.isEmpty() ? null : rows.get(0);
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
     public List<Promotion> findAll() {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 

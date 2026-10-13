@@ -14,6 +14,8 @@ public interface PromotionDAO {
 
     Promotion findById(String promotionId);
 
+    Promotion findByCode(String couponCode);
+
     List<Promotion> findAll();
 
     List<Promotion> findByProductId(String productId);

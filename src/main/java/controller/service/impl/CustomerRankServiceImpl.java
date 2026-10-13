@@ -10,6 +10,7 @@ import model.dao.intf.UserDAO;
 import model.entity.CustomerRank;
 import model.entity.Order;
 import model.entity.User;
+import model.OrderStatus;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -65,8 +66,8 @@ public class CustomerRankServiceImpl implements CustomerRankService {
         BigDecimal tongChiTieu = BigDecimal.ZERO;
 
         for (Order order : orders) {
-
-            if (order.getTotalAmount() != null) {
+            if (order.getOrderStatus() != OrderStatus.CANCELLED
+                    && order.getTotalAmount() != null) {
                 tongChiTieu = tongChiTieu.add(order.getTotalAmount());
             }
         }

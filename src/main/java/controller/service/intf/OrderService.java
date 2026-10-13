@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface OrderService {
 
-    void taoDonHang(Order order);
+    boolean taoDonHang(Order order);
 
     void huyDonHang(String orderId);
 

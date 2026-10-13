@@ -7,13 +7,13 @@ import java.util.List;
 
 public interface UserService {
 
-    void dangKy(User user);
+    boolean dangKy(User user);
 
     User dangNhap(String email, String password);
 
     void dangXuat();
 
-    void suaThongTin(User user);
+    boolean suaThongTin(User user);
 
     void doiMatKhau(String userId, String matKhauMoi);
 

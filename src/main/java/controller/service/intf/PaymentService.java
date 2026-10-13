@@ -5,7 +5,7 @@ import model.entity.Payment;
 
 public interface PaymentService {
 
-    void taoThanhToan(Payment payment);
+    boolean taoThanhToan(Payment payment);
 
     void xuLyThanhToan(String paymentId);
 

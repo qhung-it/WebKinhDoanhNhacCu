@@ -18,28 +18,28 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public void taoThanhToan(Payment payment) {
+    public boolean taoThanhToan(Payment payment) {
 
         if (payment == null) {
-            return;
+            return false;
         }
 
         if (payment.getPaymentId() == null ||
                 payment.getPaymentId().trim().isEmpty()) {
-            return;
+            return false;
         }
 
         if (payment.getOrder() == null) {
-            return;
+            return false;
         }
 
         if (payment.getAmount() == null ||
-                payment.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            return;
+                payment.getAmount().compareTo(BigDecimal.ZERO) < 0) {
+            return false;
         }
 
         if (payment.getPaymentMethod() == null) {
-            return;
+            return false;
         }
 
         payment.setPaymentStatus(PaymentStatus.PENDING);
@@ -48,7 +48,7 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setPaymentDate(LocalDateTime.now());
         }
 
-        paymentDAO.save(payment);
+        return paymentDAO.save(payment);
     }
 
     @Override

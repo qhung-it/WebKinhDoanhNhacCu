@@ -2,6 +2,7 @@ package model.entity;
 
 import jakarta.persistence.*;
 import model.DiscountType;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,8 +16,12 @@ public class Promotion {
     @Column(name = "promotion_id")
     private String promotionId;
 
+    @Nationalized
     @Column(name = "promotion_name")
     private String promotionName;
+
+    @Column(name = "coupon_code", length = 20)
+    private String couponCode;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "discount_type", nullable = false)
@@ -24,6 +29,22 @@ public class Promotion {
 
     @Column(name = "discount_value")
     private BigDecimal discountValue;
+
+    @Column(name = "minimum_order_amount")
+    private BigDecimal minimumOrderAmount = BigDecimal.ZERO;
+
+    @Column(name = "max_discount")
+    private BigDecimal maxDiscount;
+
+    @Nationalized
+    @Column(name = "description", length = 500)
+    private String description;
+
+    @Column(name = "free_shipping")
+    private boolean freeShipping;
+
+    @Column(name = "active")
+    private Boolean active = true;
 
     @Column(name = "start_date_time")
     private LocalDateTime startDateTime;
@@ -63,6 +84,9 @@ public class Promotion {
         this.promotionName = promotionName;
     }
 
+    public String getCouponCode() { return couponCode; }
+    public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
+
     public DiscountType getDiscountType() {
         return discountType;
     }
@@ -78,6 +102,47 @@ public class Promotion {
     public void setDiscountValue(BigDecimal discountValue) {
         this.discountValue = discountValue;
     }
+
+    public BigDecimal getMinimumOrderAmount() {
+        return minimumOrderAmount;
+    }
+    
+    public void setMinimumOrderAmount(BigDecimal minimumOrderAmount) {
+        this.minimumOrderAmount = minimumOrderAmount;
+    }
+    
+    public BigDecimal getMaxDiscount() {
+        return maxDiscount;
+    }
+    
+    public void setMaxDiscount(BigDecimal maxDiscount) {
+        this.maxDiscount = maxDiscount;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public boolean isFreeShipping() {
+        return freeShipping;
+    }
+    
+    public void setFreeShipping(boolean freeShipping) {
+        this.freeShipping = freeShipping;
+    }
+    
+    public boolean getActive() {
+        return active == null || active;
+    }
+    
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+    
 
     public LocalDateTime getStartDateTime() {
         return startDateTime;
@@ -113,6 +178,8 @@ public class Promotion {
 
     public boolean isActive() {
         LocalDateTime now = LocalDateTime.now();
+
+        if (Boolean.FALSE.equals(active)) return false;
 
         if (startDateTime != null && now.isBefore(startDateTime)) {
             return false;
@@ -157,6 +224,11 @@ public class Promotion {
                     .divide(BigDecimal.valueOf(100));
         } else {
             discount = discountValue;
+        }
+
+        if (maxDiscount != null && maxDiscount.compareTo(BigDecimal.ZERO) > 0
+                && discount.compareTo(maxDiscount) > 0) {
+            discount = maxDiscount;
         }
 
         // Không cho tiền giảm lớn hơn giá trị được áp dụng promotion

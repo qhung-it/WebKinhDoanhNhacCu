@@ -1,6 +1,7 @@
 package model.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,10 +13,12 @@ public class Brand {
     @Column(name = "brand_id")
     private String brandId;
 
+    @Nationalized
     @Column(name = "brand_name")
     private String brandName;
 
-    @Column(name = "description")
+    @Nationalized
+    @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
     @OneToMany(mappedBy = "brand", fetch = FetchType.LAZY)

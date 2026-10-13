@@ -1,9 +1,12 @@
 package model.dao.impl;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import model.OrderStatus;
 import model.dao.intf.OrderDAO;
 import model.entity.Order;
+import model.entity.OrderLineItem;
+import model.entity.Product;
 import model.util.JpaUtil;
 
 import java.math.BigDecimal;
@@ -17,6 +20,17 @@ public class OrderDAOImpl implements OrderDAO {
 
         try {
             em.getTransaction().begin();
+
+            for (OrderLineItem item : order.getOrderLineItems()) {
+                Product product = em.find(Product.class, item.getProduct().getProductId(),
+                        LockModeType.PESSIMISTIC_WRITE);
+                if (product == null || item.getQuantity() <= 0
+                        || product.getQuantity() < item.getQuantity()) {
+                    throw new IllegalStateException("Insufficient product stock");
+                }
+                product.setQuantity(product.getQuantity() - item.getQuantity());
+                item.setProduct(product);
+            }
 
             em.persist(order);
 

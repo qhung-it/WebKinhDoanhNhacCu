@@ -22,8 +22,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void dangKy(User user) {
-        userDAO.save(user);
+    public boolean dangKy(User user) {
+        return userDAO.save(user);
     }
 
     @Override
@@ -47,8 +47,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void suaThongTin(User user) {
-        userDAO.update(user);
+    public boolean suaThongTin(User user) {
+        return userDAO.update(user);
     }
 
     @Override
