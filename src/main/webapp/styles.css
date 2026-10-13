@@ -1641,7 +1641,9 @@ button {
 }
 
 .price-range input {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--gray-light);
   border-radius: var(--radius-sm);
@@ -1649,6 +1651,7 @@ button {
 }
 
 .price-range .separator {
+  flex: 0 0 auto;
   color: var(--gray);
 }
 

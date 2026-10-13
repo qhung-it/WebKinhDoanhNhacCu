@@ -13,7 +13,7 @@ public class Deposit {
     @Column(name = "deposit_id")
     private String depositId;
 
-    @Column(name = "amount")
+    @Column(name = "amount", precision = 19, scale = 2)
     private BigDecimal amount;
 
     @Column(name = "deposit_date")

@@ -57,6 +57,8 @@ public class CartLineItem {
     public BigDecimal calculateSubtotal() {
         if (product == null) { return BigDecimal.ZERO; }
 
+        if (product.getPrice() == null || quantity <= 0) { return BigDecimal.ZERO; }
+
         return product.getPrice()
                 .multiply(BigDecimal.valueOf(quantity));
     }

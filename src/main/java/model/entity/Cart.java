@@ -56,6 +56,9 @@ public class Cart {
         BigDecimal result = BigDecimal.ZERO;
 
         for (CartLineItem x : cartLineItems) {
+            if (x == null || x.getProduct() == null || x.getProduct().getPrice() == null || x.getQuantity() <= 0) {
+                continue;
+            }
             result = result.add(
                     x.getProduct().getPrice()
                             .multiply(BigDecimal.valueOf(x.getQuantity()))

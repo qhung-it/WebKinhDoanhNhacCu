@@ -1,7 +1,6 @@
 package model.entity;
 
 import jakarta.persistence.*;
-import model.DiscountType;
 import model.OrderStatus;
 import org.hibernate.annotations.Nationalized;
 
@@ -20,13 +19,13 @@ public class Order {
     @Column(name = "order_date")
     private LocalDateTime orderDate;
 
-    @Column(name = "subtotal")
+    @Column(name = "subtotal", precision = 19, scale = 2)
     private BigDecimal subtotal;
 
-    @Column(name = "discount")
+    @Column(name = "discount", precision = 19, scale = 2)
     private BigDecimal discount;
 
-    @Column(name = "total_amount")
+    @Column(name = "total_amount", precision = 19, scale = 2)
     private BigDecimal totalAmount;
 
     @Nationalized
@@ -44,10 +43,10 @@ public class Order {
     @Column(name = "coupon_code", length = 50)
     private String couponCode;
 
-    @Column(name = "shipping_fee")
+    @Column(name = "shipping_fee", precision = 19, scale = 2)
     private BigDecimal shippingFee;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
     @OrderBy("changedAt ASC")
     private List<OrderHistory> history = new ArrayList<>();
@@ -242,6 +241,7 @@ public class Order {
         LocalDateTime now = LocalDateTime.now();
 
         BigDecimal totalDiscount = BigDecimal.ZERO;
+        BigDecimal orderSubtotal = calculateSubtotal();
 
         for (OrderLineItem item : orderLineItems) {
             Product product = item.getProduct();
@@ -254,6 +254,10 @@ public class Order {
             BigDecimal itemDiscount = BigDecimal.ZERO;
 
             for (Promotion promotion : product.getPromotions()) {
+
+                if (Boolean.FALSE.equals(promotion.getActive())) {
+                    continue;
+                }
 
                 if (promotion.getStartDateTime() != null
                         && now.isBefore(promotion.getStartDateTime())) {
@@ -269,25 +273,12 @@ public class Order {
                     continue;
                 }
 
-                BigDecimal value = promotion.getDiscountValue();
-
-                if (value == null || value.compareTo(BigDecimal.ZERO) <= 0) {
+                BigDecimal minimum = promotion.getMinimumOrderAmount();
+                if (minimum != null && orderSubtotal.compareTo(minimum) < 0) {
                     continue;
                 }
 
-                BigDecimal currentDiscount;
-
-                if (promotion.getDiscountType() == DiscountType.PERCENTAGE) {
-                    currentDiscount = itemSubtotal
-                            .multiply(value)
-                            .divide(BigDecimal.valueOf(100));
-                } else {
-                    currentDiscount = value;
-                }
-
-                if (currentDiscount.compareTo(itemSubtotal) > 0) {
-                    currentDiscount = itemSubtotal;
-                }
+                BigDecimal currentDiscount = promotion.calculateDiscount(itemSubtotal);
 
                 if (currentDiscount.compareTo(itemDiscount) > 0) {
                     itemDiscount = currentDiscount;
@@ -303,7 +294,9 @@ public class Order {
 
     public BigDecimal calculateTotal() {
         this.totalAmount = calculateSubtotal()
-                .subtract(calculateDiscount());
+                .subtract(calculateDiscount())
+                .add(shippingFee == null ? BigDecimal.ZERO : shippingFee)
+                .max(BigDecimal.ZERO);
 
         return this.totalAmount;
     }

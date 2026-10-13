@@ -18,7 +18,7 @@ public class Payment {
     @Column(name = "payment_method", nullable = false)
     private PaymentMethod paymentMethod = PaymentMethod.CASH;
 
-    @Column(name = "amount")
+    @Column(name = "amount", precision = 19, scale = 2)
     private BigDecimal amount;
 
     @Column(name = "payment_date")

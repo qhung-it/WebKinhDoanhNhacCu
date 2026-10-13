@@ -27,13 +27,13 @@ public class Promotion {
     @Column(name = "discount_type", nullable = false)
     private DiscountType discountType = DiscountType.PERCENTAGE;
 
-    @Column(name = "discount_value")
+    @Column(name = "discount_value", precision = 19, scale = 2)
     private BigDecimal discountValue;
 
-    @Column(name = "minimum_order_amount")
+    @Column(name = "minimum_order_amount", precision = 19, scale = 2)
     private BigDecimal minimumOrderAmount = BigDecimal.ZERO;
 
-    @Column(name = "max_discount")
+    @Column(name = "max_discount", precision = 19, scale = 2)
     private BigDecimal maxDiscount;
 
     @Nationalized

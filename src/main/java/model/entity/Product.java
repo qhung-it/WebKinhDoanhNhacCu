@@ -29,10 +29,10 @@ public class Product {
     @Column(name = "description", length = 2000)
     private String description;
 
-    @Column(name = "price")
+    @Column(name = "price", precision = 19, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "old_price")
+    @Column(name = "old_price", precision = 19, scale = 2)
     private BigDecimal oldPrice;
 
     @Column(name = "quantity")

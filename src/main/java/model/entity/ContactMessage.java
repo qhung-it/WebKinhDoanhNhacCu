@@ -28,7 +28,7 @@ public class ContactMessage {
     private String phone;
 
     @Nationalized
-    @Column(name = "subject", nullable = false, length = 80)
+    @Column(name = "subject", nullable = false, length = 255)
     private String subject;
 
     @Nationalized
