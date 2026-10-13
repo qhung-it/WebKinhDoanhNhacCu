@@ -21,25 +21,25 @@ public class PaymentServiceImpl implements PaymentService {
     public boolean taoThanhToan(Payment payment) {
 
         if (payment == null) {
-            return false;
+            throw new IllegalArgumentException("Thiếu thông tin thanh toán");
         }
 
         if (payment.getPaymentId() == null ||
                 payment.getPaymentId().trim().isEmpty()) {
-            return false;
+            throw new IllegalArgumentException("Thiếu mã thanh toán");
         }
 
         if (payment.getOrder() == null) {
-            return false;
+            throw new IllegalArgumentException("Thanh toán chưa có đơn hàng");
         }
 
         if (payment.getAmount() == null ||
-                payment.getAmount().compareTo(BigDecimal.ZERO) < 0) {
-            return false;
+                payment.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Số tiền thanh toán không hợp lệ");
         }
 
         if (payment.getPaymentMethod() == null) {
-            return false;
+            throw new IllegalArgumentException("Thiếu phương thức thanh toán");
         }
 
         payment.setPaymentStatus(PaymentStatus.PENDING);

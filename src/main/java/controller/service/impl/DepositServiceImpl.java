@@ -19,23 +19,14 @@ public class DepositServiceImpl implements DepositService {
 
     @Override
     public void taoDatCoc(Deposit deposit) {
-
-        if (deposit == null) {
-            return;
+        if (deposit == null || deposit.getDepositId() == null || deposit.getDepositId().isBlank()) {
+            throw new IllegalArgumentException("Thiếu thông tin đặt cọc");
         }
-
-        if (deposit.getDepositId() == null ||
-                deposit.getDepositId().trim().isEmpty()) {
-            return;
-        }
-
         if (deposit.getOrder() == null) {
-            return;
+            throw new IllegalArgumentException("Đặt cọc chưa có đơn hàng");
         }
-
-        if (deposit.getAmount() == null ||
-                deposit.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            return;
+        if (deposit.getAmount() == null || deposit.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Số tiền đặt cọc không hợp lệ");
         }
 
         if (deposit.getDepositDate() == null) {
@@ -46,7 +37,9 @@ public class DepositServiceImpl implements DepositService {
             deposit.setDepositStatus(DepositStatus.PENDING);
         }
 
-        depositDAO.save(deposit);
+        if (!depositDAO.save(deposit)) {
+            throw new IllegalStateException("Không lưu được tiền đặt cọc");
+        }
     }
 
     @Override

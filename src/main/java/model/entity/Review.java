@@ -1,9 +1,9 @@
 package model.entity;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.Nationalized;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import org.hibernate.annotations.Nationalized;
 
 @Entity
 @Table(name = "review")
@@ -18,8 +18,11 @@ public class Review {
     private int rating;
 
     @Nationalized
-    @Column(name = "comment", columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "comment")
     private String comment;
+
+    @Column(name = "approved", nullable = false)
+    private boolean approved;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -55,6 +58,14 @@ public class Review {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public boolean isApproved() {
+        return approved;
+    }
+
+    public void setApproved(boolean approved) {
+        this.approved = approved;
     }
 
     public User getUser() {

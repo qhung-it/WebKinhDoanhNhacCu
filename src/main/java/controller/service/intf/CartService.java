@@ -8,4 +8,5 @@ public interface CartService {
     boolean capNhatSanPham(String userId, String productId, int quantity);
     boolean xoaSanPham(String userId, String productId);
     boolean xoaTatCa(String userId);
+    void luuGioHang(Cart cart);
 }

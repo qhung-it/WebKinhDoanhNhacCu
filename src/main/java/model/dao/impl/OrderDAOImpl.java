@@ -112,7 +112,13 @@ public class OrderDAOImpl implements OrderDAO {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
-            return em.find(Order.class, orderId);
+            Order order = em.createQuery(
+                    "SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.user " +
+                            "LEFT JOIN FETCH o.orderLineItems li LEFT JOIN FETCH li.product " +
+                            "WHERE o.orderId = :orderId", Order.class)
+                    .setParameter("orderId", orderId).getResultStream().findFirst().orElse(null);
+            if (order != null) order.getHistory().size();
+            return order;
 
         } finally {
             em.close();
@@ -124,13 +130,16 @@ public class OrderDAOImpl implements OrderDAO {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
-            return em.createQuery(
-                            "SELECT o FROM Order o " +
+            List<Order> orders = em.createQuery(
+                            "SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.user " +
+                                    "LEFT JOIN FETCH o.orderLineItems li LEFT JOIN FETCH li.product " +
                                     "WHERE o.user.userId = :userId",
                             Order.class
                     )
                     .setParameter("userId", userId)
                     .getResultList();
+            orders.forEach(o -> o.getHistory().size());
+            return orders;
 
         } finally {
             em.close();
@@ -161,10 +170,12 @@ public class OrderDAOImpl implements OrderDAO {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
-            return em.createQuery(
-                    "SELECT o FROM Order o",
-                    Order.class
-            ).getResultList();
+            List<Order> orders = em.createQuery(
+                    "SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.user " +
+                            "LEFT JOIN FETCH o.orderLineItems li LEFT JOIN FETCH li.product",
+                    Order.class).getResultList();
+            orders.forEach(o -> o.getHistory().size());
+            return orders;
 
         } finally {
             em.close();

@@ -23,4 +23,8 @@ public interface OrderService {
     BigDecimal thongKeDoanhThuTheoSanPham(String productId);
 
     BigDecimal thongKeDoanhThuTheoDanhMuc(String categoryId);
+
+    List<Order> getDanhSachDonHang();
+
+    void capNhatTrangThai(String orderId, OrderStatus status, String nguoiThucHien);
 }

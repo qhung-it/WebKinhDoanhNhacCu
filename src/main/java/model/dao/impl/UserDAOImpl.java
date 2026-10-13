@@ -84,7 +84,11 @@ public class UserDAOImpl implements UserDAO {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
-            return em.find(User.class, userId);
+            return em.createQuery(
+                            "SELECT u FROM User u LEFT JOIN FETCH u.customerRank WHERE u.userId = :userId",
+                            User.class)
+                    .setParameter("userId", userId)
+                    .getResultStream().findFirst().orElse(null);
         } finally {
             em.close();
         }
@@ -113,7 +117,7 @@ public class UserDAOImpl implements UserDAO {
 
         try {
             return em.createQuery(
-                    "SELECT u FROM User u",
+                    "SELECT u FROM User u LEFT JOIN FETCH u.customerRank",
                     User.class
             ).getResultList();
         } finally {
@@ -127,7 +131,7 @@ public class UserDAOImpl implements UserDAO {
 
         try {
             return em.createQuery(
-                            "SELECT u FROM User u WHERE u.role = :role",
+                            "SELECT u FROM User u LEFT JOIN FETCH u.customerRank WHERE u.role = :role",
                             User.class
                     ).setParameter("role", role)
                     .getResultList();

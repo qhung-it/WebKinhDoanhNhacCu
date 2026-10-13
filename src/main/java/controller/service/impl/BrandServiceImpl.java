@@ -4,6 +4,7 @@ import controller.service.intf.BrandService;
 import model.dao.impl.BrandDAOImpl;
 import model.dao.intf.BrandDAO;
 import model.entity.Brand;
+
 import java.util.List;
 
 public class BrandServiceImpl implements BrandService {

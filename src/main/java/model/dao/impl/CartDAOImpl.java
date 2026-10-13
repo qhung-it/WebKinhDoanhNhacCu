@@ -15,6 +15,36 @@ import java.util.logging.Logger;
 public class CartDAOImpl implements CartDAO {
     private static final Logger LOGGER = Logger.getLogger(CartDAOImpl.class.getName());
     @Override
+    public boolean save(Cart cart) {
+        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+        try {
+            em.getTransaction().begin();
+            em.persist(cart);
+            em.getTransaction().commit();
+            return true;
+        } catch (RuntimeException e) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            LOGGER.log(Level.SEVERE, "Unable to save cart", e);
+            return false;
+        } finally { em.close(); }
+    }
+
+    @Override
+    public boolean update(Cart cart) {
+        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+        try {
+            em.getTransaction().begin();
+            em.merge(cart);
+            em.getTransaction().commit();
+            return true;
+        } catch (RuntimeException e) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            LOGGER.log(Level.SEVERE, "Unable to update cart", e);
+            return false;
+        } finally { em.close(); }
+    }
+
+    @Override
     public Cart findByUserId(String userId) {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
         try {

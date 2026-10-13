@@ -38,7 +38,21 @@ public class ReviewServiceImpl implements ReviewService {
             return;
         }
 
+        review.setApproved(true);
         reviewDAO.update(review);
+    }
+
+    @Override
+    public void capNhatDuyetDanhGia(String reviewId, boolean approved) {
+        Review review = reviewDAO.findById(reviewId);
+        if (review == null) return;
+        review.setApproved(approved);
+        reviewDAO.update(review);
+    }
+
+    @Override
+    public List<Review> getDanhSachDanhGia() {
+        return reviewDAO.findAll();
     }
 
     @Override

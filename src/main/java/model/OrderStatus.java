@@ -1,8 +1,9 @@
 package model;
 
 public enum OrderStatus {
-    PENDING,
-    COMPLETED,
-    FAILED,
-    CANCELLED
+    PROCESSING,   // Đang xử lý
+    CONFIRMED,    // Đã xác nhận
+    SHIPPING,     // Đang giao
+    COMPLETED,    // Hoàn thành
+    CANCELLED     // Đã hủy
 }

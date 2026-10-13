@@ -161,7 +161,7 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
         order.setOrderId(UUID.randomUUID().toString());
         order.setOrderDate(LocalDateTime.now());
         order.setShippingAddress(address);
-        order.setOrderStatus(OrderStatus.PENDING);
+        order.setOrderStatus(OrderStatus.PROCESSING);
         order.setUser(user);
         order.setDiscount(couponDiscount.add(tierDiscount).add(productPromotionDiscount));
         order.setPromotionCode(promotionCode);
@@ -271,7 +271,7 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
             send(response, HttpServletResponse.SC_NOT_FOUND, new ApiMessage("Không tìm thấy đơn hàng"));
             return;
         }
-        if (order.getOrderStatus() != OrderStatus.PENDING) {
+        if (order.getOrderStatus() != OrderStatus.PROCESSING) {
             send(response, HttpServletResponse.SC_CONFLICT,
                     new ApiMessage("Chỉ có thể hủy đơn đang chờ xử lý"));
             return;

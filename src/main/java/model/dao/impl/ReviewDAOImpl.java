@@ -95,7 +95,7 @@ public class ReviewDAOImpl implements ReviewDAO {
 
         try {
             return em.createQuery(
-                            "SELECT r FROM Review r JOIN FETCH r.user " +
+                            "SELECT r FROM Review r LEFT JOIN FETCH r.user LEFT JOIN FETCH r.order " +
                                     "WHERE r.product.productId = :productId",
                             Review.class
                     ).setParameter("productId", productId)
@@ -127,7 +127,7 @@ public class ReviewDAOImpl implements ReviewDAO {
 
         try {
             return em.createQuery(
-                    "SELECT r FROM Review r",
+                    "SELECT r FROM Review r LEFT JOIN FETCH r.user LEFT JOIN FETCH r.product LEFT JOIN FETCH r.order",
                     Review.class
             ).getResultList();
         } finally {

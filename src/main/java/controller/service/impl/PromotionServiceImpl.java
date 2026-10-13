@@ -36,6 +36,11 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     @Override
+    public List<Promotion> getDanhSachKhuyenMai() {
+        return promotionDAO.findAll();
+    }
+
+    @Override
     public List<Promotion> getKhuyenMaiTheoSanPham(String productId) {
         return promotionDAO.findByProductId(productId);
     }

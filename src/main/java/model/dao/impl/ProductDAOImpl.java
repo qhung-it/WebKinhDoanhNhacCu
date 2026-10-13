@@ -101,11 +101,8 @@ public class ProductDAOImpl implements ProductDAO {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
-            return em.createQuery(
-                            "SELECT p FROM Product p LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category WHERE p.productId = :id",
-                            Product.class)
-                    .setParameter("id", productId)
-                    .getResultStream().findFirst().orElse(null);
+            return em.createQuery("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand WHERE p.productId = :id", Product.class)
+                    .setParameter("id", productId).getResultStream().findFirst().orElse(null);
 
         } finally {
             em.close();
@@ -118,7 +115,7 @@ public class ProductDAOImpl implements ProductDAO {
 
         try {
             return em.createQuery(
-                    "SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category",
+                    "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand",
                     Product.class
             ).getResultList();
 
@@ -133,14 +130,11 @@ public class ProductDAOImpl implements ProductDAO {
         try {
             List<Object[]> rows = em.createQuery(
                     "SELECT item.product.productId, SUM(item.quantity) FROM OrderLineItem item " +
-                            "WHERE item.order.orderStatus = :status GROUP BY item.product.productId",
-                    Object[].class)
+                            "WHERE item.order.orderStatus = :status GROUP BY item.product.productId", Object[].class)
                     .setParameter("status", model.OrderStatus.COMPLETED)
                     .getResultList();
             Map<String, Long> result = new HashMap<>();
-            for (Object[] row : rows) {
-                result.put(String.valueOf(row[0]), ((Number) row[1]).longValue());
-            }
+            for (Object[] row : rows) result.put(String.valueOf(row[0]), ((Number) row[1]).longValue());
             return result;
         } finally {
             em.close();
@@ -153,14 +147,12 @@ public class ProductDAOImpl implements ProductDAO {
         try {
             LocalDateTime now = LocalDateTime.now();
             List<Object[]> rows = em.createQuery(
-                    "SELECT product.productId, product.price, promotion.discountType, " +
-                            "promotion.discountValue, promotion.maxDiscount " +
+                    "SELECT product.productId, product.price, promotion.discountType, promotion.discountValue, promotion.maxDiscount " +
                             "FROM Promotion promotion JOIN promotion.products product " +
                             "WHERE promotion.active = true AND promotion.couponCode IS NULL " +
                             "AND SIZE(promotion.customerRanks) = 0 " +
                             "AND (promotion.startDateTime IS NULL OR promotion.startDateTime <= :now) " +
-                            "AND (promotion.endDateTime IS NULL OR promotion.endDateTime >= :now)",
-                    Object[].class)
+                            "AND (promotion.endDateTime IS NULL OR promotion.endDateTime >= :now)", Object[].class)
                     .setParameter("now", now)
                     .getResultList();
             Map<String, BigDecimal> result = new HashMap<>();
@@ -173,15 +165,13 @@ public class ProductDAOImpl implements ProductDAO {
                         ? price.multiply(value).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)
                         : value;
                 BigDecimal maxDiscount = (BigDecimal) row[4];
-                if (maxDiscount != null && maxDiscount.signum() > 0 && discount.compareTo(maxDiscount) > 0) {
+                if (maxDiscount != null && maxDiscount.signum() > 0 && discount.compareTo(maxDiscount) > 0)
                     discount = maxDiscount;
-                }
                 if (discount.compareTo(price) > 0) discount = price;
                 BigDecimal candidate = price.subtract(discount);
                 BigDecimal current = result.get(productId);
-                if (candidate.signum() >= 0 && (current == null || candidate.compareTo(current) < 0)) {
+                if (candidate.signum() >= 0 && (current == null || candidate.compareTo(current) < 0))
                     result.put(productId, candidate);
-                }
             }
             return result;
         } finally {
@@ -195,7 +185,7 @@ public class ProductDAOImpl implements ProductDAO {
 
         try {
             return em.createQuery(
-                            "SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category " +
+                            "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand " +
                                     "WHERE LOWER(p.productName) LIKE LOWER(:keyword)",
                             Product.class
                     )
@@ -213,7 +203,7 @@ public class ProductDAOImpl implements ProductDAO {
 
         try {
             return em.createQuery(
-                            "SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category " +
+                            "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand " +
                                     "WHERE p.category.categoryId = :categoryId",
                             Product.class
                     )
@@ -231,7 +221,7 @@ public class ProductDAOImpl implements ProductDAO {
 
         try {
             return em.createQuery(
-                            "SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.brand LEFT JOIN FETCH p.category " +
+                            "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand " +
                                     "WHERE p.brand.brandId = :brandId",
                             Product.class
                     )

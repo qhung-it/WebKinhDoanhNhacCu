@@ -12,4 +12,15 @@ public class CartServiceImpl implements CartService {
     @Override public boolean capNhatSanPham(String userId, String productId, int quantity) { return cartDAO.updateItem(userId, productId, quantity); }
     @Override public boolean xoaSanPham(String userId, String productId) { return cartDAO.removeItem(userId, productId); }
     @Override public boolean xoaTatCa(String userId) { return cartDAO.clear(userId); }
+    @Override public void luuGioHang(Cart cart) {
+        if (cart == null || cart.getUser() == null) throw new IllegalArgumentException("Thiếu thông tin giỏ hàng");
+        Cart current = cartDAO.findByUserId(cart.getUser().getUserId());
+        if (current == null) {
+            if (!cartDAO.save(cart)) throw new IllegalStateException("Không lưu được giỏ hàng");
+        } else {
+            cart.setCartId(current.getCartId());
+            for (model.entity.CartLineItem item : cart.getCartLineItems()) item.setCart(cart);
+            if (!cartDAO.update(cart)) throw new IllegalStateException("Không cập nhật được giỏ hàng");
+        }
+    }
 }
