@@ -39,7 +39,9 @@ function stars(r) {
 let cart = store.get('cart', []);       // [{id, qty}]
 let wish = store.get('wish', []);       // [id]
 
-const cartCount = () => cart.reduce((s, i) => s + i.qty, 0);
+/* Số trên biểu tượng giỏ = số SẢN PHẨM khác nhau (mỗi sản phẩm 1 dòng CartLineItem); mua 2 cây piano vẫn là 1 dòng, số lượng nằm trong dòng đó */
+const cartCount = () => cart.length;
+const cartQtyTotal = () => cart.reduce((s, i) => s + i.qty, 0);
 const cartSubtotal = () => cart.reduce((s, i) => { const p = byId(i.id); return s + (p ? p.price * i.qty : 0); }, 0);
 
 function saveCart() { store.set('cart', cart); updateBadges(); }
@@ -241,13 +243,34 @@ function initSearch() {
 const getUser = () => store.get('user', null);
 function hash(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return String(h); }
 
+function setSession(u) { store.set('user', { userId: u.userId, name: u.name, email: u.email, phone: u.phone || '', address: u.address || '', role: u.role || 'customer' }); }
+const isStaff = u => !!(u && u.role && u.role !== 'customer');
 function initUserButton() {
   const u = getUser();
   const a = $('.user-btn');
   if (!a) return;
+  const old = $('.user-menu'); if (old) old.remove();
   a.setAttribute('href', 'login.html');
-  a.title = u ? 'Tài khoản: ' + u.name : 'Đăng nhập / Đăng ký';
-  if (u) a.innerHTML = '<span class="user-avatar">' + esc(u.name.trim().charAt(0).toUpperCase()) + '</span>';
+  a.classList.add('has-label');
+  if (!u) {
+    a.title = 'Đăng nhập / Đăng ký';
+    a.innerHTML = '<i class="far fa-user"></i><span class="user-label">Đăng nhập</span>';
+    a.onclick = null;
+    return;
+  }
+  a.title = 'Tài khoản: ' + u.name;
+  a.innerHTML = '<span class="user-avatar">' + esc(u.name.trim().charAt(0).toUpperCase()) + '</span><span class="user-label">' + esc(u.name.trim().split(' ').pop()) + '</span><i class="fas fa-chevron-down" style="font-size:.65rem"></i>';
+  const m = document.createElement('div');
+  m.className = 'user-menu';
+  m.innerHTML = '<div class="um-head"><strong>' + esc(u.name) + '</strong><small>' + esc(u.email) + '</small><span class="tier-pill" style="background:' + (isStaff(u) ? '#2D3436' : getTier(u.email).color) + '">' + (isStaff(u) ? esc(ROLE_NAMES[u.role] || 'Nhân viên') : '<i class="fas fa-crown"></i> ' + esc(getTier(u.email).name)) + '</span></div>' +
+    (isStaff(u) ? '<a href="admin.html"><i class="fas fa-gauge-high"></i> Trang quản trị</a>' : '') +
+    '<a href="login.html?tab=orders"><i class="fas fa-receipt"></i> Đơn hàng của tôi</a><a href="login.html?tab=profile"><i class="far fa-id-card"></i> Hồ sơ cá nhân</a><a href="wishlist.html"><i class="far fa-heart"></i> Yêu thích</a>' +
+    '<button type="button" id="umLogout"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>';
+  a.parentNode.style.position = 'relative';
+  a.parentNode.appendChild(m);
+  a.onclick = e => { e.preventDefault(); m.classList.toggle('open'); };
+  document.addEventListener('click', e => { if (!e.target.closest('.user-menu') && !e.target.closest('.user-btn')) m.classList.remove('open'); });
+  $('#umLogout', m).addEventListener('click', () => { store.set('user', null); showToast('Đã đăng xuất', 'info'); setTimeout(() => { location.href = PAGE === 'login' ? 'login.html' : location.pathname.split('/').pop() + location.search; }, 400); });
 }
 
 /* ---------- Trang chủ ---------- */
@@ -511,6 +534,7 @@ function initDetail() {
         '<div class="product-actions">' +
           '<button type="button" class="btn btn-primary" id="dAdd"><i class="fas fa-cart-plus"></i> Thêm vào giỏ</button>' +
           '<button type="button" class="btn btn-outline" id="dBuy"><i class="fas fa-bolt"></i> Mua ngay</button>' +
+          (calculateDeposit(p.price) ? '<button type="button" class="btn btn-deposit" id="dDeposit"><i class="fas fa-piggy-bank"></i> Đặt cọc ' + fmt(calculateDeposit(p.price)) + '</button>' : '') +
           '<button type="button" class="btn btn-outline btn-icon btn-wish" data-id="' + p.id + '" title="Yêu thích" style="flex:0 0 52px;height:52px"><i class="far fa-heart"></i></button>' +
         '</div>' +
         '<div class="product-extra-benefits"><div><i class="fas fa-shield-alt"></i><span>Bảo hành chính hãng 12 tháng</span></div><div><i class="fas fa-shipping-fast"></i><span>Giao hàng nhanh toàn quốc</span></div><div><i class="fas fa-undo-alt"></i><span>Đổi trả 30 ngày miễn phí</span></div></div>' +
@@ -548,7 +572,9 @@ function initDetail() {
   $('.qty-plus', root).addEventListener('click', () => { qty.value = Math.min(Math.min(99, p.stock), (parseInt(qty.value) || 1) + 1); });
   $('#dAdd').addEventListener('click', () => addToCart(p.id, parseInt(qty.value) || 1));
   $('#dBuy').addEventListener('click', () => { if (addToCart(p.id, parseInt(qty.value) || 1, true) !== false) location.href = 'checkout.html'; });
-  if (p.stock <= 0) { $('#dAdd').disabled = true; $('#dBuy').disabled = true; }
+  const dd = $('#dDeposit');
+  if (dd) dd.addEventListener('click', () => { if (addToCart(p.id, parseInt(qty.value) || 1, true) !== false) location.href = 'checkout.html?dep=1'; });
+  if (p.stock <= 0) { $('#dAdd').disabled = true; $('#dBuy').disabled = true; if (dd) dd.disabled = true; }
 
   const main = $('.product-main-image', root);
   $$('.thumb', root).forEach(t => t.addEventListener('click', () => {
@@ -581,7 +607,7 @@ function initDetail() {
     if (text.length < 10) return showToast('Nhận xét cần ít nhất 10 ký tự', 'error');
     const list = store.get('reviews_' + p.id, []);
     const uu = getUser();
-    const bought = !!(uu && store.get('orders', []).some(o => o.user === uu.email && o.status !== 'Đã hủy' && o.items.some(it => it.id === p.id)));
+    const bought = !!(uu && store.get('orders', []).some(o => o.user === uu.email && !['CANCELLED', 'FAILED'].includes(o.status) && o.items.some(it => it.id === p.id)));
     list.unshift({ id: 'rv' + Date.now(), name, rating: starVal, text, date: new Date().toLocaleDateString('vi-VN'), email: uu ? uu.email : '', verified: bought, hidden: false });
     store.set('reviews_' + p.id, list);
     showToast('Cảm ơn bạn đã đánh giá!');
@@ -603,7 +629,7 @@ function getCoupon() {
 /* ---------- Hạng thành viên (tính theo tổng chi tiêu các đơn không bị hủy) ---------- */
 function userSpend(email) {
   if (!email) return 0;
-  return store.get('orders', []).filter(o => o.user === email && o.status !== 'Đã hủy').reduce((s, o) => s + (o.totals ? o.totals.total : 0), 0);
+  return store.get('orders', []).filter(o => o.user === email && !['CANCELLED', 'FAILED'].includes(o.status)).reduce((s, o) => s + (o.totals ? o.totals.total : 0), 0);
 }
 function getTier(email) {
   const spend = userSpend(email);
@@ -618,8 +644,10 @@ function calcTotals() {
   const c = code ? COUPONS[code] : null;
   let discount = 0, freeShip = sub >= SITE.freeShipFrom;
   if (c && sub >= c.min) {
-    if (c.type === 'percent') discount = Math.min(Math.round(sub * c.value / 100), c.max || Infinity);
-    if (c.type === 'amount') discount = c.value;
+    // Promotion.isApplicable(): chỉ tính trên các sản phẩm được áp dụng (để trống = tất cả)
+    const scope = (c.products && c.products.length) ? cart.reduce((x, i) => { const p = byId(i.id); return x + (p && c.products.includes(p.id) ? p.price * i.qty : 0); }, 0) : sub;
+    if (c.type === 'PERCENTAGE') discount = Math.min(Math.round(scope * c.value / 100), c.max || Infinity);   // Promotion.calculateDiscount()
+    if (c.type === 'FIXED_AMOUNT') discount = Math.min(c.value, scope);
     if (c.type === 'ship') freeShip = true;
   }
   const u = getUser();
@@ -636,6 +664,7 @@ function summaryHTML(t, withButton) {
     (t.tierDiscount ? '<div class="sum-row"><span>Ưu đãi hạng ' + esc(t.tierName) + '</span><strong style="color:var(--accent-green)">-' + fmt(t.tierDiscount) + '</strong></div>' : '') + '<div class="sum-row"><span>Phí vận chuyển</span><strong>' + (t.ship ? fmt(t.ship) : 'Miễn phí') + '</strong></div>' +
     (t.sub > 0 && t.sub < SITE.freeShipFrom ? '<div class="ship-note"><i class="fas fa-truck"></i> Mua thêm ' + fmt(SITE.freeShipFrom - t.sub) + ' để được miễn phí vận chuyển</div>' : '') +
     '<div class="sum-row total"><span>Tổng cộng</span><strong>' + fmt(t.total) + '</strong></div>' +
+    (calculateDeposit(t.total) ? '<div class="ship-note" style="background:#FFF4DF;color:#9a6200"><i class="fas fa-piggy-bank"></i> Đơn này có thể đặt cọc ' + fmt(calculateDeposit(t.total)) + ' (' + Math.round(DEPOSIT.rate * 100) + '%), phần còn lại trả khi nhận hàng</div>' : '') +
     (withButton ? '<a href="checkout.html" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;margin-top:16px"><i class="fas fa-lock"></i> Tiến hành thanh toán</a>' : '') +
   '</div>';
 }
@@ -713,21 +742,28 @@ function initCheckout() {
     root.innerHTML = emptyState('🛒', 'Giỏ hàng trống', 'Bạn cần thêm sản phẩm trước khi thanh toán.', '<a href="products.html" class="btn btn-primary">Mua sắm ngay</a>');
     return;
   }
+  if (!getUser()) {
+    root.innerHTML = emptyState('🔐', 'Vui lòng đăng nhập để đặt hàng', 'Đăng nhập giúp bạn theo dõi đơn hàng, nhận ưu đãi theo hạng thành viên và đánh giá sản phẩm đã mua.', '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><a href="login.html?next=checkout.html" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Đăng nhập</a><a href="login.html?tab=register&next=checkout.html" class="btn btn-outline">Tạo tài khoản mới</a></div>');
+    return;
+  }
   const t = calcTotals();
+  const depAmt = calculateDeposit(t.total);
+  const depBlock = depAmt > 0 ? '<div class="deposit-box"><strong><i class="fas fa-hand-holding-dollar"></i> Đặt cọc cho đơn giá trị lớn</strong>' +
+    '<label class="pay-option"><input type="radio" name="dep" value="full"' + (params.get('dep') ? '' : ' checked') + '><i class="fas fa-circle-check"></i><div><strong>Thanh toán toàn bộ</strong><span>' + fmt(t.total) + '</span></div></label>' +
+    '<label class="pay-option"><input type="radio" name="dep" value="deposit"' + (params.get('dep') ? ' checked' : '') + '><i class="fas fa-piggy-bank"></i><div><strong>Đặt cọc ' + Math.round(DEPOSIT.rate * 100) + '% = ' + fmt(depAmt) + '</strong><span>Còn lại ' + fmt(t.total - depAmt) + ' thanh toán khi nhận hàng</span></div></label></div>' : '';
   root.innerHTML =
     '<form id="checkoutForm" class="checkout-layout" novalidate><div class="checkout-main">' +
       '<div class="summary-box"><h3><i class="fas fa-map-marker-alt"></i> Thông tin nhận hàng</h3>' +
         '<div class="form-row"><div class="form-group"><label for="coName">Họ tên *</label><input id="coName" type="text" value="' + esc(u.name || '') + '" placeholder="Nguyễn Văn A"></div>' +
         '<div class="form-group"><label for="coPhone">Số điện thoại *</label><input id="coPhone" type="tel" value="' + esc(u.phone || '') + '" placeholder="0912345678"></div></div>' +
         '<div class="form-group"><label for="coEmail">Email</label><input id="coEmail" type="email" value="' + esc(u.email || '') + '" placeholder="email@example.com"></div>' +
-        '<div class="form-group"><label for="coAddr">Địa chỉ nhận hàng *</label><input id="coAddr" type="text" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"></div>' +
+        '<div class="form-group"><label for="coAddr">Địa chỉ nhận hàng *</label><input id="coAddr" type="text" value="' + esc(u.address || '') + '" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"></div>' +
         '<div class="form-group"><label for="coNote">Ghi chú</label><textarea id="coNote" rows="3" placeholder="Ghi chú thêm cho đơn hàng (không bắt buộc)"></textarea></div>' +
       '</div>' +
       '<div class="summary-box" style="margin-top:20px"><h3><i class="fas fa-credit-card"></i> Phương thức thanh toán</h3>' +
-        [['cod', 'fa-money-bill-wave', 'Thanh toán khi nhận hàng (COD)', 'Kiểm tra hàng trước khi thanh toán'],
-         ['bank', 'fa-university', 'Chuyển khoản ngân hàng', 'Soundora Co., Ltd - STK 0123 456 789 - Vietcombank'],
-         ['momo', 'fa-wallet', 'Ví MoMo / ZaloPay', 'Thanh toán nhanh qua ví điện tử']
-        ].map((m, i) => '<label class="pay-option"><input type="radio" name="pay" value="' + m[0] + '"' + (i === 0 ? ' checked' : '') + '><i class="fas ' + m[1] + '"></i><div><strong>' + m[2] + '</strong><span>' + m[3] + '</span></div></label>').join('') +
+        [['CASH', 'fa-money-bill-wave', 'Tiền mặt (COD)', 'Thanh toán khi nhận hàng, được kiểm tra hàng trước'],
+         ['E_WALLET', 'fa-wallet', 'Ví điện tử (MoMo / ZaloPay)', 'Thanh toán nhanh qua ví điện tử']
+        ].map((m, i) => '<label class="pay-option"><input type="radio" name="pay" value="' + m[0] + '"' + (i === 0 ? ' checked' : '') + '><i class="fas ' + m[1] + '"></i><div><strong>' + m[2] + '</strong><span>' + m[3] + '</span></div></label>').join('') + depBlock +
       '</div>' +
     '</div><div>' +
       '<div class="summary-box"><h3>Đơn hàng của bạn</h3>' +
@@ -748,15 +784,21 @@ function initCheckout() {
     if (short) { const sp = byId(short.id); return showToast(sp ? ('"' + sp.name + '" chỉ còn ' + sp.stock + ' sản phẩm trong kho') : 'Có sản phẩm không còn bán', 'error'); }
     const tt = calcTotals();
     const pay = $('input[name="pay"]:checked').value;
+    const depSel = $('input[name="dep"]:checked');
+    const useDep = !!(depSel && depSel.value === 'deposit' && depAmt > 0);
     const nowIso = new Date().toISOString();
+    const cu = getUser();
+    const code = 'SDR' + Date.now().toString().slice(-8);
     const order = {
-      code: 'SDR' + Date.now().toString().slice(-8),
-      date: new Date().toLocaleString('vi-VN'), createdAt: nowIso,
+      code, orderId: code, userId: cu.userId || '',
+      date: new Date().toLocaleString('vi-VN'), createdAt: nowIso, orderDate: nowIso,
       items: cart.map(i => { const p = byId(i.id); return { id: p.id, name: p.name, emoji: p.emoji, price: p.price, qty: i.qty }; }),
-      totals: tt, pay, payStatus: 'Chưa thanh toán', status: 'Đang xử lý',
-      history: [{ at: nowIso, status: 'Đang xử lý', by: 'Khách hàng' }],
+      totals: tt, subtotal: tt.sub, discount: tt.discount + (tt.tierDiscount || 0), depositAmount: useDep ? depAmt : 0, totalAmount: tt.total, shippingAddress: addr,
+      status: 'PENDING', history: [{ at: nowIso, status: 'PENDING', by: 'Khách hàng' }],
+      payment: { paymentId: 'PAY' + code.slice(3), paymentMethod: pay, amount: tt.total - (useDep ? depAmt : 0), paymentDate: null, paymentStatus: 'PENDING' },
+      deposit: useDep ? { depositId: 'DEP' + code.slice(3), amount: depAmt, depositDate: nowIso, status: 'PENDING' } : null,
       customer: { name, phone, email, addr, note: $('#coNote').value.trim() },
-      user: (getUser() || {}).email || ''
+      user: cu.email
     };
     const orders = store.get('orders', []); orders.unshift(order); store.set('orders', orders);
     // Trừ tồn kho + ghi lịch sử kho để Admin theo dõi
@@ -768,7 +810,7 @@ function initCheckout() {
     });
     SDR.write('a_stock', stockMap); SDR.write('a_invlog', invlog.slice(0, 500));
     cart = []; saveCart(); store.set('coupon', '');
-    root.innerHTML = '<div class="empty-state success"><div class="empty-icon">🎉</div><h3>Đặt hàng thành công!</h3><p>Cảm ơn bạn đã mua sắm tại Soundora. Mã đơn hàng của bạn là <strong style="color:var(--primary)">' + order.code + '</strong>.<br>Chúng tôi sẽ liên hệ xác nhận qua số điện thoại ' + esc(phone) + ' trong thời gian sớm nhất.</p><div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><a href="products.html" class="btn btn-primary">Tiếp tục mua sắm</a><a href="login.html" class="btn btn-outline">Xem đơn hàng</a></div></div>';
+    root.innerHTML = '<div class="empty-state success"><div class="empty-icon">🎉</div><h3>Đặt hàng thành công!</h3><p>Cảm ơn bạn đã mua sắm tại Soundora. Mã đơn hàng của bạn là <strong style="color:var(--primary)">' + order.code + '</strong>.<br>Chúng tôi sẽ liên hệ xác nhận qua số điện thoại ' + esc(phone) + ' trong thời gian sớm nhất.' + (order.deposit ? '<br>Vui lòng đặt cọc <strong>' + fmt(order.deposit.amount) + '</strong>, phần còn lại thanh toán khi nhận hàng.' : '') + '</p><div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><a href="products.html" class="btn btn-primary">Tiếp tục mua sắm</a><a href="login.html?tab=orders" class="btn btn-outline">Xem đơn hàng</a></div></div>';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
@@ -864,34 +906,69 @@ function initInfo() {
 }
 
 /* ---------- Đăng nhập / Đăng ký / Tài khoản ---------- */
+function restockOrder(o, note) {
+  const stockMap = SDR.read('a_stock', {}), invlog = SDR.read('a_invlog', []), now = new Date().toISOString();
+  o.items.forEach(it => {
+    const p = anyById(it.id); if (!p) return;
+    const before = (stockMap[it.id] != null) ? stockMap[it.id] : p.stock;
+    stockMap[it.id] = before + it.qty;
+    invlog.unshift({ at: now, id: it.id, name: it.name, type: 'Nhập kho', qty: it.qty, before, after: stockMap[it.id], note, by: 'Hệ thống' });
+  });
+  SDR.write('a_stock', stockMap); SDR.write('a_invlog', invlog.slice(0, 500));
+}
+function cancelMyOrder(code) {
+  const orders = store.get('orders', []); const o = orders.find(x => x.code === code);
+  if (!o || o.status !== 'PENDING') return false;
+  o.status = 'CANCELLED'; o.history = (o.history || []).concat([{ at: new Date().toISOString(), status: 'CANCELLED', by: 'Khách hàng' }]);
+  if (o.payment) o.payment.paymentStatus = o.payment.paymentStatus === 'COMPLETED' ? 'REFUNDED' : 'FAILED';
+  if (o.deposit && o.deposit.status === 'COMPLETED') o.deposit.status = 'REFUNDED';
+  restockOrder(o, 'Khách hủy đơn ' + o.code);
+  store.set('orders', orders); return true;
+}
+
 function initAuth() {
   const root = $('#authRoot');
   if (!root) return;
+  const next = params.get('next') || '';
+  const safeNext = /^[a-z0-9-]+\.html(\?[\w=&%-]*)?$/i.test(next) ? next : '';
+  let mode = params.get('role') === 'admin' ? 'admin' : 'customer';
+
+  const shell = (inner) => '<div class="auth-shell"><aside class="auth-side"><div class="auth-brand"><i class="fas fa-music"></i> Soundora</div><h2>Chơi nhạc theo cách của bạn</h2><p>Tạo tài khoản để nhận ưu đãi theo hạng thành viên và theo dõi đơn hàng dễ dàng.</p>' +
+    '<ul><li><i class="fas fa-crown"></i> Hạng Thành viên / VIP giảm đến 5%</li><li><i class="fas fa-truck-fast"></i> Theo dõi đơn hàng realtime</li><li><i class="fas fa-hand-holding-dollar"></i> Đặt cọc linh hoạt cho đơn giá trị lớn</li><li><i class="fas fa-star"></i> Đánh giá sản phẩm đã mua</li></ul></aside><section class="auth-main">' + inner + '</section></div>';
+
   function render(tab) {
     const u = getUser();
     if (u) return renderAccount(u);
     tab = tab || 'login';
-    root.innerHTML =
-      '<div class="auth-wrap"><div class="auth-tabs"><button data-t="login" class="' + (tab === 'login' ? 'active' : '') + '">Đăng nhập</button><button data-t="register" class="' + (tab === 'register' ? 'active' : '') + '">Đăng ký</button></div>' +
+    const isAdmin = mode === 'admin' && tab === 'login';
+    root.innerHTML = shell(
+      '<div class="auth-tabs"><button data-t="login" class="' + (tab === 'login' ? 'active' : '') + '">Đăng nhập</button><button data-t="register" class="' + (tab === 'register' ? 'active' : '') + '">Đăng ký</button></div>' +
+      (tab === 'login' ? '<div class="role-switch"><button type="button" data-m="customer" class="' + (mode === 'customer' ? 'on' : '') + '"><i class="far fa-user"></i> Khách hàng</button><button type="button" data-m="admin" class="' + (mode === 'admin' ? 'on' : '') + '"><i class="fas fa-user-shield"></i> Quản trị viên</button></div>' : '') +
+      (safeNext && tab === 'login' ? '<div class="auth-hint"><i class="fas fa-info-circle"></i> Đăng nhập để tiếp tục đặt hàng.</div>' : '') +
       (tab === 'login'
-        ? '<form id="loginForm" novalidate><div class="form-group"><label for="lEmail">Email</label><input id="lEmail" type="email" placeholder="email@example.com"></div><div class="form-group"><label for="lPass">Mật khẩu</label><input id="lPass" type="password" placeholder="Nhập mật khẩu"></div><button class="btn btn-primary btn-lg" style="width:100%;justify-content:center">Đăng nhập</button></form>'
-        : '<form id="regForm" novalidate><div class="form-group"><label for="rName">Họ tên</label><input id="rName" type="text" placeholder="Nguyễn Văn A"></div><div class="form-row"><div class="form-group"><label for="rEmail">Email</label><input id="rEmail" type="email" placeholder="email@example.com"></div><div class="form-group"><label for="rPhone">Số điện thoại</label><input id="rPhone" type="tel" placeholder="0912345678"></div></div><div class="form-group"><label for="rPass">Mật khẩu (tối thiểu 6 ký tự)</label><input id="rPass" type="password"></div><div class="form-group"><label for="rPass2">Nhập lại mật khẩu</label><input id="rPass2" type="password"></div><button class="btn btn-primary btn-lg" style="width:100%;justify-content:center">Tạo tài khoản</button></form>') +
-      '';
-    $$('.auth-tabs button', root).forEach(b => b.addEventListener('click', () => render(b.dataset.t)));
+        ? '<form id="loginForm" novalidate><h3>' + (isAdmin ? 'Đăng nhập quản trị' : 'Chào mừng trở lại') + '</h3><div class="form-group"><label for="lEmail">Email</label><input id="lEmail" type="email" autocomplete="username" placeholder="' + (isAdmin ? 'admin@soundora.vn' : 'email@example.com') + '"></div><div class="form-group"><label for="lPass">Mật khẩu</label><div class="pass-wrap"><input id="lPass" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu"><button type="button" class="pass-eye" aria-label="Hiện mật khẩu"><i class="far fa-eye"></i></button></div></div><button class="btn btn-primary btn-lg" style="width:100%;justify-content:center">' + (isAdmin ? '<i class="fas fa-lock"></i> Vào trang quản trị' : 'Đăng nhập') + '</button>' + (isAdmin ? '<p class="auth-note">Demo: admin@soundora.vn / admin123</p>' : '<p class="auth-note">Chưa có tài khoản? <a href="#" data-t="register">Đăng ký ngay</a></p>') + '</form>'
+        : '<form id="regForm" novalidate><h3>Tạo tài khoản khách hàng</h3><div class="form-group"><label for="rName">Họ tên</label><input id="rName" type="text" placeholder="Nguyễn Văn A"></div><div class="form-row"><div class="form-group"><label for="rEmail">Email</label><input id="rEmail" type="email" placeholder="email@example.com"></div><div class="form-group"><label for="rPhone">Số điện thoại</label><input id="rPhone" type="tel" placeholder="0912345678"></div></div><div class="form-group"><label for="rAddr">Địa chỉ giao hàng (không bắt buộc)</label><input id="rAddr" type="text" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"></div><div class="form-row"><div class="form-group"><label for="rPass">Mật khẩu (≥ 6 ký tự)</label><input id="rPass" type="password" autocomplete="new-password"></div><div class="form-group"><label for="rPass2">Nhập lại mật khẩu</label><input id="rPass2" type="password" autocomplete="new-password"></div></div><button class="btn btn-primary btn-lg" style="width:100%;justify-content:center">Tạo tài khoản</button><p class="auth-note">Đã có tài khoản? <a href="#" data-t="login">Đăng nhập</a></p></form>'));
+    $$('[data-t]', root).forEach(b => b.addEventListener('click', e => { e.preventDefault(); render(b.dataset.t); }));
+    $$('.role-switch [data-m]', root).forEach(b => b.addEventListener('click', () => { mode = b.dataset.m; render('login'); }));
+    const eye = $('.pass-eye', root); if (eye) eye.addEventListener('click', () => { const i = $('#lPass'); i.type = i.type === 'password' ? 'text' : 'password'; });
+
     const lf = $('#loginForm');
     if (lf) lf.addEventListener('submit', e => {
       e.preventDefault();
       const email = $('#lEmail').value.trim().toLowerCase(), pass = $('#lPass').value;
+      if (!email || !pass) return showToast('Vui lòng nhập email và mật khẩu', 'error');
       const found = store.get('users', []).find(x => x.email === email && x.pass === hash(pass));
       if (!found) return showToast('Email hoặc mật khẩu không đúng', 'error');
       if (found.locked) return showToast('Tài khoản đã bị khóa. Vui lòng liên hệ cửa hàng để được hỗ trợ.', 'error');
-      store.set('user', { name: found.name, email: found.email, phone: found.phone });
-      showToast('Đăng nhập thành công!'); initUserButton(); render();
+      if (mode === 'admin' && !isStaff(found)) return showToast('Tài khoản này không có quyền quản trị', 'error');
+      setSession(found);
+      showToast('Đăng nhập thành công!'); initUserButton();
+      setTimeout(() => { location.href = isStaff(found) && (mode === 'admin' || !safeNext) ? 'admin.html' : (safeNext || 'login.html'); }, 350);
     });
     const rf = $('#regForm');
     if (rf) rf.addEventListener('submit', e => {
       e.preventDefault();
-      const name = $('#rName').value.trim(), email = $('#rEmail').value.trim().toLowerCase(), phone = $('#rPhone').value.trim(), p1 = $('#rPass').value, p2 = $('#rPass2').value;
+      const name = $('#rName').value.trim(), email = $('#rEmail').value.trim().toLowerCase(), phone = $('#rPhone').value.trim(), addr = $('#rAddr').value.trim(), p1 = $('#rPass').value, p2 = $('#rPass2').value;
       if (name.length < 2) return showToast('Vui lòng nhập họ tên', 'error');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Email không hợp lệ', 'error');
       if (phone && !/^(0|\+84)\d{9,10}$/.test(phone)) return showToast('Số điện thoại không hợp lệ', 'error');
@@ -899,22 +976,61 @@ function initAuth() {
       if (p1 !== p2) return showToast('Mật khẩu nhập lại không khớp', 'error');
       const users = store.get('users', []);
       if (users.some(x => x.email === email)) return showToast('Email này đã được đăng ký', 'error');
-      users.push({ name, email, phone, pass: hash(p1), created: new Date().toISOString(), locked: false }); store.set('users', users);
-      store.set('user', { name, email, phone });
-      showToast('Tạo tài khoản thành công!'); initUserButton(); render();
+      const nu = { userId: 'U' + Date.now().toString().slice(-8), name, email, phone, address: addr, pass: hash(p1), role: 'customer', created: new Date().toISOString(), locked: false };
+      users.push(nu); store.set('users', users); setSession(nu);
+      showToast('Tạo tài khoản thành công!'); initUserButton();
+      setTimeout(() => { location.href = safeNext || 'login.html'; }, 350);
     });
   }
-  function renderAccount(u) {
-    const orders = store.get('orders', []).filter(o => !o.user || o.user === u.email);
-    root.innerHTML =
-      '<div class="account-layout"><div class="summary-box account-card"><div class="user-avatar big">' + esc(u.name.trim().charAt(0).toUpperCase()) + '</div><h3>' + esc(u.name) + '</h3><p>' + esc(u.email) + '</p>' + (u.phone ? '<p>' + esc(u.phone) + '</p>' : '') + '<p style="margin-top:8px"><span class="tier-pill" style="background:' + getTier(u.email).color + '"><i class="fas fa-crown"></i> ' + esc(getTier(u.email).name) + '</span></p><small class="text-muted">Đã chi tiêu: ' + fmt(userSpend(u.email)) + '</small>' +
-        '<a href="wishlist.html" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:12px"><i class="far fa-heart"></i> Yêu thích (' + wish.length + ')</a>' +
-        '<button class="btn btn-primary btn-sm" id="logoutBtn" style="width:100%;justify-content:center;margin-top:10px"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button></div>' +
-      '<div class="summary-box"><h3>Lịch sử đơn hàng</h3>' + (orders.length ? orders.map(o =>
-        '<div class="order-card"><div class="order-head"><strong>#' + o.code + '</strong><span class="order-status">' + esc(o.status) + '</span><small>' + esc(o.date) + '</small></div>' +
+
+  function renderAccount(u0, tab) {
+    const all = store.get('users', []); const rec = all.find(x => x.email === u0.email) || u0;
+    const u = Object.assign({}, u0, rec);
+    tab = tab || (['orders', 'profile', 'password'].includes(params.get('tab')) ? params.get('tab') : 'orders');
+    const orders = store.get('orders', []).filter(o => o.user === u.email);
+    const tier = getTier(u.email), spend = userSpend(u.email);
+    const nextTier = TIERS.slice().sort((a, b) => a.min - b.min).find(t => t.min > spend);
+    const statusCls = { PENDING: 'warn', COMPLETED: 'ok', FAILED: 'bad', CANCELLED: 'bad' };
+    let body = '';
+    if (tab === 'orders') {
+      body = '<h3>Lịch sử đơn hàng</h3>' + (orders.length ? orders.map(o =>
+        '<div class="order-card"><div class="order-head"><strong>#' + o.code + '</strong><span class="order-status st-' + (statusCls[o.status] || 'warn') + '">' + esc(ORDER_STATUS[o.status] || o.status) + '</span><small>' + esc(o.date) + '</small></div>' +
         o.items.map(i => '<div class="co-item"><span class="co-emoji">' + thumbHTML(i.id, i.emoji) + '</span><div>' + esc(i.name) + '<br><small>SL: ' + i.qty + '</small></div><strong>' + fmt(i.price * i.qty) + '</strong></div>').join('') +
-        '<div class="sum-row total"><span>Tổng cộng</span><strong>' + fmt(o.totals.total) + '</strong></div></div>').join('') : '<p class="text-muted">Bạn chưa có đơn hàng nào.</p>') + '</div></div>';
-    $('#logoutBtn').addEventListener('click', () => { store.set('user', null); showToast('Đã đăng xuất', 'info'); initUserButton(); location.reload(); });
+        '<div class="order-pay"><span><i class="fas fa-credit-card"></i> ' + esc(PAYMENT_METHOD[(o.payment || {}).paymentMethod] || '') + ' · ' + esc(PAYMENT_STATUS[(o.payment || {}).paymentStatus] || '') + '</span>' + (o.deposit ? '<span><i class="fas fa-piggy-bank"></i> Đặt cọc ' + fmt(o.deposit.amount) + ' · ' + esc(DEPOSIT_STATUS[o.deposit.status]) + '</span>' : '') + '</div>' +
+        '<div class="sum-row total"><span>Tổng cộng</span><strong>' + fmt(o.totals.total) + '</strong></div>' +
+        (o.status === 'PENDING' ? '<button class="btn btn-outline btn-sm" data-cancel="' + o.code + '"><i class="fas fa-ban"></i> Hủy đơn</button>' : '') + '</div>').join('') : '<p class="text-muted">Bạn chưa có đơn hàng nào. <a href="products.html" style="color:var(--primary)">Mua sắm ngay</a></p>');
+    } else if (tab === 'profile') {
+      body = '<h3>Hồ sơ cá nhân</h3><form id="profForm" novalidate><div class="form-row"><div class="form-group"><label>Họ tên</label><input id="pfName" value="' + esc(u.name) + '"></div><div class="form-group"><label>Số điện thoại</label><input id="pfPhone" value="' + esc(u.phone || '') + '"></div></div><div class="form-group"><label>Email</label><input value="' + esc(u.email) + '" disabled></div><div class="form-group"><label>Địa chỉ giao hàng</label><input id="pfAddr" value="' + esc(u.address || '') + '" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"></div><button class="btn btn-primary">Lưu thay đổi</button></form>';
+    } else {
+      body = '<h3>Đổi mật khẩu</h3><form id="pwForm" novalidate style="max-width:420px"><div class="form-group"><label>Mật khẩu hiện tại</label><input id="pwOld" type="password" autocomplete="current-password"></div><div class="form-group"><label>Mật khẩu mới (≥ 6 ký tự)</label><input id="pwNew" type="password" autocomplete="new-password"></div><div class="form-group"><label>Nhập lại mật khẩu mới</label><input id="pwNew2" type="password" autocomplete="new-password"></div><button class="btn btn-primary">Đổi mật khẩu</button></form>';
+    }
+    root.innerHTML = '<div class="account-layout"><div class="summary-box account-card"><div class="user-avatar big">' + esc(u.name.trim().charAt(0).toUpperCase()) + '</div><h3>' + esc(u.name) + '</h3><p>' + esc(u.email) + '</p>' + (u.phone ? '<p>' + esc(u.phone) + '</p>' : '') +
+      (isStaff(u) ? '<p><span class="tier-pill" style="background:#2D3436">' + esc(ROLE_NAMES[u.role] || 'Nhân viên') + '</span></p><a href="admin.html" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:12px"><i class="fas fa-gauge-high"></i> Vào trang quản trị</a>'
+        : '<p style="margin-top:8px"><span class="tier-pill" style="background:' + tier.color + '"><i class="fas fa-crown"></i> ' + esc(tier.name) + '</span></p><small class="text-muted">Đã chi tiêu: ' + fmt(spend) + '</small>' + (nextTier ? '<small class="text-muted" style="display:block">Còn ' + fmt(nextTier.min - spend) + ' để lên hạng ' + esc(nextTier.name) + '</small>' : '')) +
+      '<nav class="account-nav"><button data-tab="orders" class="' + (tab === 'orders' ? 'on' : '') + '"><i class="fas fa-receipt"></i> Đơn hàng</button><button data-tab="profile" class="' + (tab === 'profile' ? 'on' : '') + '"><i class="far fa-id-card"></i> Hồ sơ</button><button data-tab="password" class="' + (tab === 'password' ? 'on' : '') + '"><i class="fas fa-key"></i> Đổi mật khẩu</button><a href="wishlist.html"><i class="far fa-heart"></i> Yêu thích (' + wish.length + ')</a></nav>' +
+      '<button class="btn btn-primary btn-sm" id="logoutBtn" style="width:100%;justify-content:center;margin-top:10px"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button></div><div class="summary-box">' + body + '</div></div>';
+    $$('[data-tab]', root).forEach(b => b.addEventListener('click', () => renderAccount(u0, b.dataset.tab)));
+    $('#logoutBtn').addEventListener('click', () => { store.set('user', null); showToast('Đã đăng xuất', 'info'); initUserButton(); location.href = 'login.html'; });
+    $$('[data-cancel]', root).forEach(b => b.addEventListener('click', () => { if (confirm('Hủy đơn #' + b.dataset.cancel + '?')) { if (cancelMyOrder(b.dataset.cancel)) { showToast('Đã hủy đơn hàng', 'info'); renderAccount(u0, 'orders'); } } }));
+    const pf = $('#profForm');
+    if (pf) pf.addEventListener('submit', e => {                       // User.updateProfile()
+      e.preventDefault();
+      const name = $('#pfName').value.trim(), phone = $('#pfPhone').value.trim(), addr = $('#pfAddr').value.trim();
+      if (name.length < 2) return showToast('Vui lòng nhập họ tên', 'error');
+      if (phone && !/^(0|\+84)\d{9,10}$/.test(phone.replace(/\s/g, ''))) return showToast('Số điện thoại không hợp lệ', 'error');
+      const list = store.get('users', []); const r = list.find(x => x.email === u.email);
+      if (r) { r.name = name; r.phone = phone; r.address = addr; store.set('users', list); setSession(r); }
+      showToast('Đã cập nhật hồ sơ'); initUserButton(); renderAccount(getUser(), 'profile');
+    });
+    const pw = $('#pwForm');
+    if (pw) pw.addEventListener('submit', e => {                       // User.changePassword()
+      e.preventDefault();
+      const list = store.get('users', []); const r = list.find(x => x.email === u.email);
+      if (!r || r.pass !== hash($('#pwOld').value)) return showToast('Mật khẩu hiện tại không đúng', 'error');
+      if ($('#pwNew').value.length < 6) return showToast('Mật khẩu mới tối thiểu 6 ký tự', 'error');
+      if ($('#pwNew').value !== $('#pwNew2').value) return showToast('Mật khẩu nhập lại không khớp', 'error');
+      r.pass = hash($('#pwNew').value); store.set('users', list); showToast('Đã đổi mật khẩu'); pw.reset();
+    });
   }
   render(params.get('tab') === 'register' ? 'register' : 'login');
 }
