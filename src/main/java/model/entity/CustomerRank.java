@@ -2,6 +2,7 @@ package model.entity;
 
 import jakarta.persistence.*;
 import model.RankName;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ public class CustomerRank {
     @Column(name = "rank_id")
     private String rankId;
 
+    @Nationalized
     @Enumerated(EnumType.STRING)
     @Column(name = "rank_name")
     private RankName rankName;

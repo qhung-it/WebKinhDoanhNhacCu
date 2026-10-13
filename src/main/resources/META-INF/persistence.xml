@@ -1,6 +1,26 @@
 <persistence xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd"
              version="3.2">
     <persistence-unit name="WebNhac">
+        <class>model.entity.Brand</class>
+        <class>model.entity.ContactMessage</class>
+        <class>model.entity.Cart</class>
+        <class>model.entity.CartLineItem</class>
+        <class>model.entity.Category</class>
+        <class>model.entity.CustomerRank</class>
+        <class>model.entity.Deposit</class>
+        <class>model.entity.Order</class>
+        <class>model.entity.OrderHistory</class>
+        <class>model.entity.OrderLineItem</class>
+        <class>model.entity.InventoryHistory</class>
+        <class>model.entity.AdminAuditLog</class>
+        <class>model.entity.NewsArticle</class>
+        <class>model.entity.Payment</class>
+        <class>model.entity.Product</class>
+        <class>model.entity.Promotion</class>
+        <class>model.entity.Review</class>
+        <class>model.entity.SiteSetting</class>
+        <class>model.entity.User</class>
+
         <properties>
             <!-- SQL Server JDBC Driver -->
             <property
@@ -24,6 +44,10 @@
             <property
                     name="hibernate.format_sql"
                     value="true"/>
+
+            <property
+                    name="hibernate.hbm2ddl.auto"
+                    value="update"/>
         </properties>
     </persistence-unit>
 </persistence>

@@ -96,7 +96,8 @@ public class ProductDAOImpl implements ProductDAO {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
-            return em.find(Product.class, productId);
+            return em.createQuery("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand WHERE p.productId = :id", Product.class)
+                    .setParameter("id", productId).getResultStream().findFirst().orElse(null);
 
         } finally {
             em.close();
@@ -109,7 +110,7 @@ public class ProductDAOImpl implements ProductDAO {
 
         try {
             return em.createQuery(
-                    "SELECT p FROM Product p",
+                    "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand",
                     Product.class
             ).getResultList();
 
@@ -124,7 +125,7 @@ public class ProductDAOImpl implements ProductDAO {
 
         try {
             return em.createQuery(
-                            "SELECT p FROM Product p " +
+                            "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand " +
                                     "WHERE LOWER(p.productName) LIKE LOWER(:keyword)",
                             Product.class
                     )
@@ -142,7 +143,7 @@ public class ProductDAOImpl implements ProductDAO {
 
         try {
             return em.createQuery(
-                            "SELECT p FROM Product p " +
+                            "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand " +
                                     "WHERE p.category.categoryId = :categoryId",
                             Product.class
                     )
@@ -160,7 +161,7 @@ public class ProductDAOImpl implements ProductDAO {
 
         try {
             return em.createQuery(
-                            "SELECT p FROM Product p " +
+                            "SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand " +
                                     "WHERE p.brand.brandId = :brandId",
                             Product.class
                     )

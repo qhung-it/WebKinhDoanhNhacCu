@@ -1,6 +1,7 @@
 package model.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ public class Category {
     @Column(name = "category_id")
     private String categoryId;
 
+    @Nationalized
     @Column(name = "category_name")
     private String categoryName;
 

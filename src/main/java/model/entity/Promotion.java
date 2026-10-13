@@ -2,6 +2,7 @@ package model.entity;
 
 import jakarta.persistence.*;
 import model.DiscountType;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,8 +16,12 @@ public class Promotion {
     @Column(name = "promotion_id")
     private String promotionId;
 
+    @Nationalized
     @Column(name = "promotion_name")
     private String promotionName;
+
+    @Column(name = "coupon_code", length = 50)
+    private String couponCode;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "discount_type", nullable = false)
@@ -61,6 +66,14 @@ public class Promotion {
 
     public void setPromotionName(String promotionName) {
         this.promotionName = promotionName;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
+    }
+
+    public void setCouponCode(String couponCode) {
+        this.couponCode = couponCode;
     }
 
     public DiscountType getDiscountType() {

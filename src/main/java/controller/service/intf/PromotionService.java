@@ -14,6 +14,8 @@ public interface PromotionService {
 
     Promotion timKhuyenMai(String promotionId);
 
+    List<Promotion> getDanhSachKhuyenMai();
+
     List<Promotion> getKhuyenMaiTheoSanPham(String productId);
 
     List<Promotion> getKhuyenMaiTheoHang(String rankId);

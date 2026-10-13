@@ -83,7 +83,12 @@ public class PromotionDAOImpl implements PromotionDAO {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
-            return em.find(Promotion.class, promotionId);
+            Promotion promotion = em.find(Promotion.class, promotionId);
+            if (promotion != null) {
+                promotion.getProducts().size();
+                promotion.getCustomerRanks().size();
+            }
+            return promotion;
         } finally {
             em.close();
         }
@@ -94,10 +99,12 @@ public class PromotionDAOImpl implements PromotionDAO {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
-            return em.createQuery(
+            List<Promotion> promotions = em.createQuery(
                     "SELECT p FROM Promotion p",
                     Promotion.class
             ).getResultList();
+            promotions.forEach(p -> { p.getProducts().size(); p.getCustomerRanks().size(); });
+            return promotions;
         } finally {
             em.close();
         }

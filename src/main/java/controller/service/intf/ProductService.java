@@ -19,4 +19,8 @@ public interface ProductService {
     List<Product> getSanPhamTheoDanhMuc(String categoryId);
 
     List<Product> getSanPhamTheoThuongHieu(String brandId);
+
+    List<Product> getDanhSachSanPham();
+
+    List<Product> timKiemSanPham(String keyword, String categoryId);
 }

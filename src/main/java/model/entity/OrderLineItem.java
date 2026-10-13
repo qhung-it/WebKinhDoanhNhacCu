@@ -15,6 +15,9 @@ public class OrderLineItem {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    @Column(name = "unit_price")
+    private BigDecimal unitPrice;
+
     @Column(name = "quantity")
     private int quantity;
 
@@ -32,6 +35,14 @@ public class OrderLineItem {
 
     public int getQuantity() {
         return quantity;
+    }
+
+    public BigDecimal getUnitPrice() {
+        return unitPrice;
+    }
+
+    public void setUnitPrice(BigDecimal unitPrice) {
+        this.unitPrice = unitPrice;
     }
 
     public void setQuantity(int quantity) {
@@ -55,11 +66,8 @@ public class OrderLineItem {
     }
 
     public BigDecimal calculateSubtotal() {
-
-        if (product == null) {
-            return BigDecimal.ZERO;
-        }
-
-        return product.getPrice().multiply(BigDecimal.valueOf(quantity));
+        if (product == null) return BigDecimal.ZERO;
+        BigDecimal price = unitPrice != null ? unitPrice : product.getPrice();
+        return price.multiply(BigDecimal.valueOf(quantity));
     }
 }

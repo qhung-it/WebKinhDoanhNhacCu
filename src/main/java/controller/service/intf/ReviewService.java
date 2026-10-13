@@ -14,6 +14,10 @@ public interface ReviewService {
 
     void duyetDanhGia(String reviewId);
 
+    void capNhatDuyetDanhGia(String reviewId, boolean approved);
+
+    List<Review> getDanhSachDanhGia();
+
     List<Review> getDanhGiaTheoSanPham(String productId);
 
     List<Review> getDanhGiaTheoUser(String userId);

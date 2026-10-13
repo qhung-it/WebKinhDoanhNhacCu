@@ -5,6 +5,8 @@ import model.dao.impl.BrandDAOImpl;
 import model.dao.intf.BrandDAO;
 import model.entity.Brand;
 
+import java.util.List;
+
 public class BrandServiceImpl implements BrandService {
 
     private final BrandDAO brandDAO;
@@ -31,5 +33,10 @@ public class BrandServiceImpl implements BrandService {
     @Override
     public Brand timThuongHieu(String brandId) {
         return brandDAO.findById(brandId);
+    }
+
+    @Override
+    public List<Brand> getDanhSachThuongHieu() {
+        return brandDAO.findAll();
     }
 }

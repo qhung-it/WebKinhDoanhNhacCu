@@ -21,25 +21,25 @@ public class PaymentServiceImpl implements PaymentService {
     public void taoThanhToan(Payment payment) {
 
         if (payment == null) {
-            return;
+            throw new IllegalArgumentException("Thiếu thông tin thanh toán");
         }
 
         if (payment.getPaymentId() == null ||
                 payment.getPaymentId().trim().isEmpty()) {
-            return;
+            throw new IllegalArgumentException("Thiếu mã thanh toán");
         }
 
         if (payment.getOrder() == null) {
-            return;
+            throw new IllegalArgumentException("Thanh toán chưa có đơn hàng");
         }
 
         if (payment.getAmount() == null ||
                 payment.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            return;
+            throw new IllegalArgumentException("Số tiền thanh toán không hợp lệ");
         }
 
         if (payment.getPaymentMethod() == null) {
-            return;
+            throw new IllegalArgumentException("Thiếu phương thức thanh toán");
         }
 
         payment.setPaymentStatus(PaymentStatus.PENDING);
@@ -48,7 +48,7 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setPaymentDate(LocalDateTime.now());
         }
 
-        paymentDAO.save(payment);
+        if (!paymentDAO.save(payment)) throw new IllegalStateException("Không lưu được thanh toán");
     }
 
     @Override

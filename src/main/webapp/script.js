@@ -16,8 +16,70 @@ const store = {
   set(k, v) { try { localStorage.setItem('sdr_' + k, JSON.stringify(v)); } catch (e) { /* bỏ qua */ } }
 };
 
-const byId = id => PRODUCTS.find(p => p.id === Number(id));
-const anyById = id => (window.ALL_PRODUCTS || PRODUCTS).find(p => p.id === Number(id));
+const byId = id => PRODUCTS.find(p => String(p.id) === String(id));
+const anyById = id => (window.ALL_PRODUCTS || PRODUCTS).find(p => String(p.id) === String(id));
+const STORE_API = new URL('api/store/', document.baseURI).toString();
+let storeUser = null;
+let storeOrders = [];
+async function storeApi(path, options) {
+  const response = await fetch(STORE_API + path, Object.assign({ credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } }, options || {}));
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || 'Không thể kết nối máy chủ');
+  return body;
+}
+function couponItemsPayload() {
+  return cart.map(item => ({ productId: String(item.id), quantity: Number(item.qty) }));
+}
+function couponCartKey() {
+  return couponItemsPayload().sort((a, b) => a.productId.localeCompare(b.productId))
+    .map(item => item.productId + ':' + item.quantity + ':' + Number((byId(item.productId) || {}).price || 0)).join('|');
+}
+async function validateCouponOnServer(code) {
+  return storeApi('coupons/validate', {
+    method: 'POST',
+    body: JSON.stringify({ code, items: couponItemsPayload() })
+  });
+}
+function saveCouponQuote(quote) {
+  store.set('couponQuote', Object.assign({}, quote, { cartKey: couponCartKey() }));
+}
+async function loadStoreData() {
+  try {
+    const [products, categories, brands] = await Promise.all([storeApi('products'), storeApi('categories'), storeApi('brands')]);
+    PRODUCTS.splice(0, PRODUCTS.length, ...products.map(p => Object.assign(p, { img: p.image, features: p.features || [], specs: p.specs || [] })));
+    CATEGORIES.splice(0, CATEGORIES.length, ...categories.map(c => Object.assign(c, { icon: '🎵' })));
+    BRANDS.splice(0, BRANDS.length, ...brands);
+    window.ALL_PRODUCTS = PRODUCTS.slice();
+    Object.keys(COUPONS).forEach(k => delete COUPONS[k]);
+    try {
+      const promotions = await storeApi('promotions');
+      promotions.forEach(p => {
+        if (p.couponCode) COUPONS[p.couponCode] = { desc: p.name + ' · ' + (p.discountType === 'PERCENTAGE' ? p.discountValue + '%' : fmt(p.discountValue)) };
+      });
+    } catch (_) { }
+    try { const articles = await storeApi('news'); NEWS.splice(0, NEWS.length, ...articles); } catch (_) { NEWS.splice(0); }
+    try { Object.assign(SITE, await storeApi('settings')); } catch (_) { }
+    try {
+      const ranks = await storeApi('ranks');
+      const colors = ['#8E8E93', '#0984E3', '#E1A200', '#6C5CE7'];
+      TIERS.splice(0, TIERS.length, ...ranks.map((r, i) => ({ key: r.id, name: r.name, min: Number(r.minSpending || 0), discount: 0, color: colors[i % colors.length] })));
+    } catch (_) { TIERS.splice(0); }
+    try { storeUser = await storeApi('me'); } catch (_) { storeUser = null; store.set('user', null); }
+    if (storeUser) {
+      store.set('user', storeUser);
+      try { cart = (await storeApi('cart')).map(x => ({ id: x.productId, qty: x.quantity })); store.set('cart', cart); } catch (_) { }
+      try { storeOrders = await storeApi('orders'); } catch (_) { storeOrders = []; }
+      const savedCode = store.get('coupon', '');
+      if (savedCode && cart.length) {
+        try { saveCouponQuote(await validateCouponOnServer(savedCode)); }
+        catch (_) { store.set('couponQuote', null); }
+      }
+    }
+  } catch (error) {
+    console.error('Store API could not be loaded:', error);
+    PRODUCTS.splice(0); CATEGORIES.splice(0); BRANDS.splice(0); window.ALL_PRODUCTS = [];
+  }
+}
 /* Ảnh nhỏ cho đơn hàng / giỏ hàng: ưu tiên ảnh sản phẩm, rồi tới emoji đã lưu */
 function thumbHTML(id, emoji, cls) {
   const p = anyById(id);
@@ -37,30 +99,33 @@ function stars(r) {
 
 /* ---------- Trạng thái: giỏ hàng, yêu thích ---------- */
 let cart = store.get('cart', []);       // [{id, qty}]
-let wish = store.get('wish', []);       // [id]
+let wish = store.get('wish', []).map(String); // [productId]
 
 const cartCount = () => cart.reduce((s, i) => s + i.qty, 0);
 const cartSubtotal = () => cart.reduce((s, i) => { const p = byId(i.id); return s + (p ? p.price * i.qty : 0); }, 0);
 
-function saveCart() { store.set('cart', cart); updateBadges(); }
+function saveCart() {
+  store.set('cart', cart); updateBadges();
+  if (storeUser) storeApi('cart', { method: 'POST', body: JSON.stringify({ items: cart.map(i => ({ productId: String(i.id), quantity: i.qty })) }) }).catch(e => showToast(e.message, 'error'));
+}
 function saveWish() { store.set('wish', wish); updateBadges(); }
 
 function updateBadges() {
   $$('.cart-btn .badge').forEach(b => { b.textContent = cartCount(); b.classList.toggle('zero', cartCount() === 0); });
   $$('.wish-btn .badge').forEach(b => { b.textContent = wish.length; b.classList.toggle('zero', wish.length === 0); });
   $$('.btn-wish').forEach(b => {
-    const on = wish.includes(Number(b.dataset.id));
+    const on = wish.includes(String(b.dataset.id));
     const i = $('i', b);
     if (i) { i.className = (on ? 'fas' : 'far') + ' fa-heart'; i.style.color = on ? '#FF6B6B' : ''; }
   });
 }
 
 function addToCart(id, qty, silent) {
-  id = Number(id); qty = qty || 1;
+  qty = qty || 1;
   const p = byId(id);
   if (!p) return;
   if (p.stock <= 0) { showToast('Sản phẩm đã hết hàng', 'error'); return false; }
-  const item = cart.find(i => i.id === id);
+  const item = cart.find(i => String(i.id) === String(id));
   const have = item ? item.qty : 0;
   if (have + qty > p.stock) {
     if (item) item.qty = p.stock; else if (p.stock > 0) cart.push({ id, qty: p.stock });
@@ -75,7 +140,7 @@ function addToCart(id, qty, silent) {
 }
 
 function toggleWish(id) {
-  id = Number(id);
+  id = String(id);
   const idx = wish.indexOf(id);
   if (idx >= 0) { wish.splice(idx, 1); showToast('Đã xóa khỏi danh sách yêu thích', 'info'); }
   else { wish.push(id); showToast('Đã thêm vào danh sách yêu thích!'); }
@@ -119,7 +184,7 @@ function cardHTML(p, opts) {
   else if (p.badge === 'hot') badges = '<span class="badge-tag badge-hot"><i class="fas fa-fire"></i> Bán chạy</span>';
   else if (p.badge === 'new' || p.isNew) badges = '<span class="badge-tag badge-new">Mới</span>';
   else if (d) badges = '<span class="badge-tag badge-sale">-' + d + '%</span>';
-  const wishOn = wish.includes(p.id);
+  const wishOn = wish.includes(String(p.id));
   const low = p.stock > 0 && p.stock <= 5;
   return '' +
     '<div class="product-card' + (opts.promo ? ' promo-product-card' : '') + (p.stock <= 0 ? ' is-out' : '') + '">' +
@@ -238,7 +303,7 @@ function initSearch() {
 }
 
 /* ---------- Tài khoản ---------- */
-const getUser = () => store.get('user', null);
+const getUser = () => storeUser;
 function hash(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return String(h); }
 
 function initUserButton() {
@@ -452,22 +517,6 @@ function initCountdown() {
 }
 
 /* ---------- Chi tiết sản phẩm ---------- */
-function seedReviews(p) {
-  const names = ['Nguyễn Văn An', 'Trần Thị Mai', 'Lê Hoàng Nam', 'Phạm Quốc Huy', 'Đỗ Thu Hà'];
-  const texts = [
-    'Sản phẩm đúng như mô tả, đóng gói cẩn thận, giao hàng nhanh. Rất hài lòng!',
-    'Chất lượng tốt so với tầm giá. Nhân viên tư vấn nhiệt tình, sẽ ủng hộ tiếp.',
-    'Âm thanh rất ổn, dùng một thời gian thấy bền. Mình sẽ giới thiệu cho bạn bè.',
-    'Hàng chính hãng, có đầy đủ tem bảo hành. Shop hỗ trợ cài đặt rất nhiệt tình.',
-    'Đáng tiền, người mới như mình dùng thấy dễ chơi và thoải mái.'
-  ];
-  const dates = ['12/09/2026', '03/09/2026', '25/08/2026', '14/08/2026', '30/07/2026'];
-  return [0, 1, 2].map(i => {
-    const k = (p.id + i) % 5;
-    return { name: names[k], rating: i === 2 ? 4 : 5, text: texts[(k + i) % 5], date: dates[(k + i) % 5] };
-  });
-}
-
 function initDetail() {
   const root = $('#detailRoot');
   if (!root) return;
@@ -478,9 +527,8 @@ function initDetail() {
   }
   document.title = p.name + ' | Soundora';
   const d = discountPct(p);
-  const userReviews = store.get('reviews_' + p.id, []).filter(r => !r.hidden);
-  const reviews = userReviews.concat(seedReviews(p));
-  const total = p.reviews + userReviews.length;
+  const reviews = p.serverReviews || [];
+  const total = reviews.length;
 
   const r = p.rating;
   const p5 = Math.round(20 + (r - 3.5) * 40), p4 = Math.round((100 - p5) * 0.62), p3 = Math.round((100 - p5 - p4) * 0.6), p2 = Math.round((100 - p5 - p4 - p3) * 0.6), p1 = 100 - p5 - p4 - p3 - p2;
@@ -573,19 +621,18 @@ function initDetail() {
     i.addEventListener('click', () => { starVal = Number(i.dataset.v); paint(starVal); });
   });
   $('#starInput').addEventListener('mouseleave', () => paint(starVal));
-  form.addEventListener('submit', e => {
+  form.addEventListener('submit', async e => {
     e.preventDefault();
     const name = $('#rvName').value.trim(), text = $('#rvText').value.trim();
     if (!starVal) return showToast('Vui lòng chọn số sao', 'error');
     if (!name) return showToast('Vui lòng nhập họ tên', 'error');
     if (text.length < 10) return showToast('Nhận xét cần ít nhất 10 ký tự', 'error');
-    const list = store.get('reviews_' + p.id, []);
-    const uu = getUser();
-    const bought = !!(uu && store.get('orders', []).some(o => o.user === uu.email && o.status !== 'Đã hủy' && o.items.some(it => it.id === p.id)));
-    list.unshift({ id: 'rv' + Date.now(), name, rating: starVal, text, date: new Date().toLocaleDateString('vi-VN'), email: uu ? uu.email : '', verified: bought, hidden: false });
-    store.set('reviews_' + p.id, list);
-    showToast('Cảm ơn bạn đã đánh giá!');
-    initDetail();
+    try {
+      await storeApi('reviews', { method: 'POST', body: JSON.stringify({ productId: String(p.id), rating: starVal, comment: text }) });
+      showToast('Đánh giá đã được gửi và chờ duyệt.');
+      p.serverReviews = await storeApi('reviews?productId=' + encodeURIComponent(p.id));
+      initDetail();
+    } catch (error) { showToast(error.message, 'error'); }
     setTimeout(() => { const b = $('.tabs-header button[data-tab="reviews"]'); if (b) b.click(); }, 0);
   });
   updateBadges();
@@ -597,36 +644,35 @@ function reviewHTML(r) {
 
 /* ---------- Giỏ hàng ---------- */
 function getCoupon() {
-  const code = store.get('coupon', '');
-  return code && COUPONS[code] ? code : '';
+  return String(store.get('coupon', '') || '').trim().toUpperCase();
+}
+function getCouponQuote() {
+  const quote = store.get('couponQuote', null);
+  return quote && quote.code === getCoupon() && quote.cartKey === couponCartKey() ? quote : null;
 }
 /* ---------- Hạng thành viên (tính theo tổng chi tiêu các đơn không bị hủy) ---------- */
 function userSpend(email) {
   if (!email) return 0;
-  return store.get('orders', []).filter(o => o.user === email && o.status !== 'Đã hủy').reduce((s, o) => s + (o.totals ? o.totals.total : 0), 0);
+  return storeOrders.filter(o => o.status !== 'CANCELLED').reduce((sum, order) => sum + Number(order.total || 0), 0);
 }
 function getTier(email) {
   const spend = userSpend(email);
   const list = TIERS.slice().sort((a, b) => a.min - b.min);
+  if (!list.length) return { key: 'none', name: 'Chưa xếp hạng', min: 0, discount: 0, color: '#8E8E93' };
   let t = list[0];
   list.forEach(x => { if (spend >= x.min) t = x; });
   return t;
 }
 function calcTotals() {
   const sub = cartSubtotal();
-  const code = getCoupon();
-  const c = code ? COUPONS[code] : null;
-  let discount = 0, freeShip = sub >= SITE.freeShipFrom;
-  if (c && sub >= c.min) {
-    if (c.type === 'percent') discount = Math.min(Math.round(sub * c.value / 100), c.max || Infinity);
-    if (c.type === 'amount') discount = c.value;
-    if (c.type === 'ship') freeShip = true;
-  }
+  const quote = getCouponQuote();
+  const discount = quote ? Number(quote.discount || 0) : 0;
+  const freeShip = sub >= SITE.freeShipFrom;
   const u = getUser();
   const tier = u ? getTier(u.email) : null;
   const tierDiscount = (tier && tier.discount) ? Math.round((sub - discount) * tier.discount / 100) : 0;
   const ship = (sub === 0 || freeShip) ? 0 : SITE.shipFee;
-  return { sub, discount, tierDiscount, tierName: tier ? tier.name : '', ship, total: Math.max(0, sub - discount - tierDiscount + ship), code: (c && sub >= c.min) ? code : '' };
+  return { sub, discount, tierDiscount, tierName: tier ? tier.name : '', ship, total: Math.max(0, sub - discount - tierDiscount + ship), code: quote ? quote.code : '' };
 }
 
 function summaryHTML(t, withButton) {
@@ -664,7 +710,7 @@ function renderCart() {
       '<div style="display:flex;justify-content:space-between;margin-top:16px;flex-wrap:wrap;gap:10px"><a href="products.html" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Tiếp tục mua sắm</a><button class="btn btn-outline btn-sm" id="clearCart"><i class="fas fa-trash"></i> Xóa giỏ hàng</button></div>' +
     '</div><div>' +
       '<div class="summary-box" style="margin-bottom:16px"><h3>Mã giảm giá</h3><div class="coupon-row"><input type="text" id="couponInput" placeholder="Nhập mã giảm giá" value="' + esc(code) + '"><button class="btn btn-primary btn-sm" id="applyCoupon">Áp dụng</button></div>' +
-        '<small class="text-muted">Thử: SOUNDORA10, FREESHIP, WELCOME50</small></div>' +
+        '<small class="text-muted">' + (getCouponQuote() ? 'Đã áp dụng ' + esc(getCouponQuote().code) : (getCoupon() ? 'Giỏ hàng đã thay đổi; hãy áp dụng lại mã.' : 'Mã được quản lý trong chương trình khuyến mãi.')) + '</small></div>' +
       summaryHTML(t, true) +
     '</div></div>';
 }
@@ -673,33 +719,32 @@ function initCart() {
   const root = $('#cartRoot');
   if (!root) return;
   renderCart();
-  root.addEventListener('click', e => {
+  root.addEventListener('click', async e => {
     const row = e.target.closest('.cart-item');
     const act = e.target.closest('[data-act]');
     if (row && act) {
-      const id = Number(row.dataset.id), item = cart.find(i => i.id === id);
+      const id = row.dataset.id, item = cart.find(i => String(i.id) === id);
       if (act.dataset.act === 'plus') {
         const pp = byId(id);
         if (pp && item.qty + 1 > pp.stock) showToast('Chỉ còn ' + pp.stock + ' sản phẩm trong kho', 'error');
         else item.qty = Math.min(99, item.qty + 1);
       }
       if (act.dataset.act === 'minus') item.qty = Math.max(1, item.qty - 1);
-      if (act.dataset.act === 'remove') { cart = cart.filter(i => i.id !== id); showToast('Đã xóa sản phẩm khỏi giỏ hàng', 'info'); }
+      if (act.dataset.act === 'remove') { cart = cart.filter(i => String(i.id) !== id); showToast('Đã xóa sản phẩm khỏi giỏ hàng', 'info'); }
       saveCart(); renderCart();
     }
     if (e.target.closest('#clearCart')) { if (confirm('Xóa toàn bộ sản phẩm trong giỏ hàng?')) { cart = []; saveCart(); renderCart(); } }
     if (e.target.closest('#applyCoupon')) {
       const code = $('#couponInput').value.trim().toUpperCase();
-      if (!code) { store.set('coupon', ''); renderCart(); return; }
-      const c = COUPONS[code];
-      if (!c) return showToast('Mã giảm giá không hợp lệ', 'error');
-      if (cartSubtotal() < c.min) return showToast('Đơn hàng chưa đạt giá trị tối thiểu ' + fmt(c.min), 'error');
-      if (c.tier && c.tier !== 'all') {
-        const uu = getUser(), order = TIERS.slice().sort((a, b) => a.min - b.min).map(x => x.key);
-        const mine = uu ? order.indexOf(getTier(uu.email).key) : -1;
-        if (mine < order.indexOf(c.tier)) return showToast('Mã này chỉ dành cho hạng ' + ((TIERS.find(x => x.key === c.tier) || {}).name || c.tier) + ' trở lên', 'error');
-      }
-      store.set('coupon', code); showToast('Đã áp dụng mã ' + code); renderCart();
+      if (!code) { store.set('coupon', ''); store.set('couponQuote', null); renderCart(); return; }
+      if (!storeUser) return showToast('Đăng nhập để kiểm tra mã giảm giá', 'error');
+      try {
+        const quote = await validateCouponOnServer(code);
+        store.set('coupon', quote.code);
+        saveCouponQuote(quote);
+        showToast('Đã áp dụng ' + quote.code + ' · giảm ' + fmt(quote.discount));
+        renderCart();
+      } catch (error) { store.set('coupon', ''); store.set('couponQuote', null); showToast(error.message, 'error'); }
     }
   });
 }
@@ -737,7 +782,7 @@ function initCheckout() {
       '<a href="cart.html" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:10px">Quay lại giỏ hàng</a>' +
     '</div></form>';
 
-  $('#checkoutForm').addEventListener('submit', e => {
+  $('#checkoutForm').addEventListener('submit', async e => {
     e.preventDefault();
     const name = $('#coName').value.trim(), phone = $('#coPhone').value.trim(), email = $('#coEmail').value.trim(), addr = $('#coAddr').value.trim();
     if (name.length < 2) return showToast('Vui lòng nhập họ tên', 'error');
@@ -746,29 +791,17 @@ function initCheckout() {
     if (addr.length < 8) return showToast('Vui lòng nhập địa chỉ nhận hàng đầy đủ', 'error');
     const short = cart.find(i => { const p = byId(i.id); return !p || i.qty > p.stock; });
     if (short) { const sp = byId(short.id); return showToast(sp ? ('"' + sp.name + '" chỉ còn ' + sp.stock + ' sản phẩm trong kho') : 'Có sản phẩm không còn bán', 'error'); }
-    const tt = calcTotals();
     const pay = $('input[name="pay"]:checked').value;
-    const nowIso = new Date().toISOString();
-    const order = {
-      code: 'SDR' + Date.now().toString().slice(-8),
-      date: new Date().toLocaleString('vi-VN'), createdAt: nowIso,
-      items: cart.map(i => { const p = byId(i.id); return { id: p.id, name: p.name, emoji: p.emoji, price: p.price, qty: i.qty }; }),
-      totals: tt, pay, payStatus: 'Chưa thanh toán', status: 'Đang xử lý',
-      history: [{ at: nowIso, status: 'Đang xử lý', by: 'Khách hàng' }],
-      customer: { name, phone, email, addr, note: $('#coNote').value.trim() },
-      user: (getUser() || {}).email || ''
-    };
-    const orders = store.get('orders', []); orders.unshift(order); store.set('orders', orders);
-    // Trừ tồn kho + ghi lịch sử kho để Admin theo dõi
-    const stockMap = SDR.read('a_stock', {}), invlog = SDR.read('a_invlog', []);
-    order.items.forEach(it => {
-      const p = byId(it.id); const before = p ? p.stock : 0;
-      stockMap[it.id] = Math.max(0, before - it.qty);
-      invlog.unshift({ at: nowIso, id: it.id, name: it.name, type: 'Xuất kho', qty: -it.qty, before, after: stockMap[it.id], note: 'Đơn ' + order.code, by: 'Hệ thống' });
-    });
-    SDR.write('a_stock', stockMap); SDR.write('a_invlog', invlog.slice(0, 500));
+    try {
+      if (!storeUser) throw new Error('Vui lòng đăng nhập trước khi đặt hàng.');
+      const order = await storeApi('orders', { method: 'POST', body: JSON.stringify({ address: addr, note: $('#coNote').value.trim(), couponCode: getCoupon() || null, paymentMethod: pay === 'cod' ? 'CASH' : 'E_WALLET', items: cart.map(i => ({ productId: String(i.id), quantity: i.qty })) }) });
+      storeOrders = await storeApi('orders');
+      cart = [];
+      storeUser = await storeApi('me');
+      showToast('Đơn hàng đã được lưu vào cơ sở dữ liệu. Mã: ' + order.id);
+      root.innerHTML = '<div class="empty-state success"><div class="empty-icon">🎉</div><h3>Đặt hàng thành công!</h3><p>Mã đơn hàng: <strong style="color:var(--primary)">' + esc(order.id) + '</strong><br>Đơn hàng đã được lưu. Bạn có thể xem trạng thái trong tài khoản.</p><div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><a href="products.html" class="btn btn-primary">Tiếp tục mua sắm</a><a href="login.html" class="btn btn-outline">Xem đơn hàng</a></div></div>';
+    } catch (error) { showToast(error.message, 'error'); return; }
     cart = []; saveCart(); store.set('coupon', '');
-    root.innerHTML = '<div class="empty-state success"><div class="empty-icon">🎉</div><h3>Đặt hàng thành công!</h3><p>Cảm ơn bạn đã mua sắm tại Soundora. Mã đơn hàng của bạn là <strong style="color:var(--primary)">' + order.code + '</strong>.<br>Chúng tôi sẽ liên hệ xác nhận qua số điện thoại ' + esc(phone) + ' trong thời gian sớm nhất.</p><div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><a href="products.html" class="btn btn-primary">Tiếp tục mua sắm</a><a href="login.html" class="btn btn-outline">Xem đơn hàng</a></div></div>';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
@@ -813,11 +846,11 @@ function initNews() {
     pills.innerHTML = cats.map(c => '<a href="#" data-cat="' + esc(c) + '" class="btn btn-sm ' + (c === cat ? 'btn-primary' : 'btn-outline') + '">' + esc(c) + '</a>').join('');
     const list = NEWS.filter(n => cat === cats[0] || n.cat === cat);
     const slice = list.slice((page - 1) * per, page * per);
-    root.innerHTML = slice.map(n =>
+    root.innerHTML = slice.length ? slice.map(n =>
       '<article class="news-card"><a class="news-image" href="news-detail.html?id=' + n.id + '" style="background:linear-gradient(135deg,' + n.color + ',' + n.color2 + ')"><span class="news-tag" style="background:' + n.color + '">' + esc(n.cat) + '</span><span style="font-size:4.5rem;filter:drop-shadow(0 4px 12px rgba(0,0,0,.15))">' + n.emoji + '</span></a>' +
       '<div class="news-body"><div class="news-meta"><span><i class="far fa-calendar-alt"></i> ' + n.date + '</span><span><i class="far fa-user"></i> ' + esc(n.author) + '</span></div>' +
       '<h3 class="news-title"><a href="news-detail.html?id=' + n.id + '">' + esc(n.title) + '</a></h3><p class="news-excerpt">' + esc(n.excerpt) + '</p>' +
-      '<a href="news-detail.html?id=' + n.id + '" class="read-more">Đọc tiếp <i class="fas fa-arrow-right"></i></a></div></article>').join('');
+      '<a href="news-detail.html?id=' + n.id + '" class="read-more">Đọc tiếp <i class="fas fa-arrow-right"></i></a></div></article>').join('') : emptyState('📰', 'Chưa có bài viết', 'Tin tức sẽ được cập nhật tại đây.', '');
     renderPager(pager, list.length, page, per, p => { page = p; render(); window.scrollTo({ top: 250, behavior: 'smooth' }); });
   }
   pills.addEventListener('click', e => {
@@ -830,10 +863,10 @@ function initNews() {
 function initArticle() {
   const root = $('#articleRoot');
   if (!root) return;
-  const n = NEWS.find(x => x.id === Number(params.get('id'))) || null;
+  const n = NEWS.find(x => String(x.id) === String(params.get('id'))) || null;
   if (!n) { root.innerHTML = emptyState('📰', 'Không tìm thấy bài viết', 'Bài viết không tồn tại hoặc đã bị gỡ.', '<a class="btn btn-primary" href="news.html">Về trang tin tức</a>'); return; }
   document.title = n.title + ' | Soundora';
-  const others = NEWS.filter(x => x.id !== n.id && x.cat === n.cat).concat(NEWS.filter(x => x.id !== n.id && x.cat !== n.cat)).slice(0, 3);
+  const others = NEWS.filter(x => String(x.id) !== String(n.id) && x.cat === n.cat).concat(NEWS.filter(x => String(x.id) !== String(n.id) && x.cat !== n.cat)).slice(0, 3);
   root.innerHTML =
     '<nav class="breadcrumb"><a href="index.html"><i class="fas fa-home"></i> Trang chủ</a><span class="separator"><i class="fas fa-chevron-right"></i></span><a href="news.html">Tin tức</a><span class="separator"><i class="fas fa-chevron-right"></i></span><span class="current">' + esc(n.cat) + '</span></nav>' +
     '<article class="article"><div class="article-hero" style="background:linear-gradient(135deg,' + n.color + ',' + n.color2 + ')">' + n.emoji + '</div>' +
@@ -879,17 +912,14 @@ function initAuth() {
       '';
     $$('.auth-tabs button', root).forEach(b => b.addEventListener('click', () => render(b.dataset.t)));
     const lf = $('#loginForm');
-    if (lf) lf.addEventListener('submit', e => {
+    if (lf) lf.addEventListener('submit', async e => {
       e.preventDefault();
       const email = $('#lEmail').value.trim().toLowerCase(), pass = $('#lPass').value;
-      const found = store.get('users', []).find(x => x.email === email && x.pass === hash(pass));
-      if (!found) return showToast('Email hoặc mật khẩu không đúng', 'error');
-      if (found.locked) return showToast('Tài khoản đã bị khóa. Vui lòng liên hệ cửa hàng để được hỗ trợ.', 'error');
-      store.set('user', { name: found.name, email: found.email, phone: found.phone });
-      showToast('Đăng nhập thành công!'); initUserButton(); render();
+      try { storeUser = await storeApi('auth/login', { method: 'POST', body: JSON.stringify({ email, password: pass }) }); store.set('user', storeUser); showToast('Đăng nhập thành công!'); initUserButton(); render(); }
+      catch (error) { showToast(error.message, 'error'); }
     });
     const rf = $('#regForm');
-    if (rf) rf.addEventListener('submit', e => {
+    if (rf) rf.addEventListener('submit', async e => {
       e.preventDefault();
       const name = $('#rName').value.trim(), email = $('#rEmail').value.trim().toLowerCase(), phone = $('#rPhone').value.trim(), p1 = $('#rPass').value, p2 = $('#rPass2').value;
       if (name.length < 2) return showToast('Vui lòng nhập họ tên', 'error');
@@ -897,24 +927,22 @@ function initAuth() {
       if (phone && !/^(0|\+84)\d{9,10}$/.test(phone)) return showToast('Số điện thoại không hợp lệ', 'error');
       if (p1.length < 6) return showToast('Mật khẩu tối thiểu 6 ký tự', 'error');
       if (p1 !== p2) return showToast('Mật khẩu nhập lại không khớp', 'error');
-      const users = store.get('users', []);
-      if (users.some(x => x.email === email)) return showToast('Email này đã được đăng ký', 'error');
-      users.push({ name, email, phone, pass: hash(p1), created: new Date().toISOString(), locked: false }); store.set('users', users);
-      store.set('user', { name, email, phone });
-      showToast('Tạo tài khoản thành công!'); initUserButton(); render();
+      try { storeUser = await storeApi('auth/register', { method: 'POST', body: JSON.stringify({ name, email, phone, password: p1 }) }); store.set('user', storeUser); showToast('Tạo tài khoản thành công!'); initUserButton(); render(); }
+      catch (error) { showToast(error.message, 'error'); }
     });
   }
-  function renderAccount(u) {
-    const orders = store.get('orders', []).filter(o => !o.user || o.user === u.email);
+  async function renderAccount(u) {
+    try { storeOrders = await storeApi('orders'); } catch (error) { storeOrders = []; showToast(error.message, 'error'); }
+    const orders = storeOrders;
     root.innerHTML =
       '<div class="account-layout"><div class="summary-box account-card"><div class="user-avatar big">' + esc(u.name.trim().charAt(0).toUpperCase()) + '</div><h3>' + esc(u.name) + '</h3><p>' + esc(u.email) + '</p>' + (u.phone ? '<p>' + esc(u.phone) + '</p>' : '') + '<p style="margin-top:8px"><span class="tier-pill" style="background:' + getTier(u.email).color + '"><i class="fas fa-crown"></i> ' + esc(getTier(u.email).name) + '</span></p><small class="text-muted">Đã chi tiêu: ' + fmt(userSpend(u.email)) + '</small>' +
         '<a href="wishlist.html" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:12px"><i class="far fa-heart"></i> Yêu thích (' + wish.length + ')</a>' +
         '<button class="btn btn-primary btn-sm" id="logoutBtn" style="width:100%;justify-content:center;margin-top:10px"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button></div>' +
       '<div class="summary-box"><h3>Lịch sử đơn hàng</h3>' + (orders.length ? orders.map(o =>
-        '<div class="order-card"><div class="order-head"><strong>#' + o.code + '</strong><span class="order-status">' + esc(o.status) + '</span><small>' + esc(o.date) + '</small></div>' +
-        o.items.map(i => '<div class="co-item"><span class="co-emoji">' + thumbHTML(i.id, i.emoji) + '</span><div>' + esc(i.name) + '<br><small>SL: ' + i.qty + '</small></div><strong>' + fmt(i.price * i.qty) + '</strong></div>').join('') +
-        '<div class="sum-row total"><span>Tổng cộng</span><strong>' + fmt(o.totals.total) + '</strong></div></div>').join('') : '<p class="text-muted">Bạn chưa có đơn hàng nào.</p>') + '</div></div>';
-    $('#logoutBtn').addEventListener('click', () => { store.set('user', null); showToast('Đã đăng xuất', 'info'); initUserButton(); location.reload(); });
+        '<div class="order-card"><div class="order-head"><strong>#' + esc(o.id) + '</strong><span class="order-status">' + esc(o.status) + '</span><small>' + esc(o.createdAt || '') + '</small></div>' +
+        o.items.map(i => '<div class="co-item"><span class="co-emoji">' + thumbHTML(i.productId) + '</span><div>' + esc(i.name) + '<br><small>SL: ' + i.qty + '</small></div><strong>' + fmt(Number(i.price || 0) * Number(i.qty || 0)) + '</strong></div>').join('') +
+        '<div class="sum-row total"><span>Tổng cộng</span><strong>' + fmt(o.total || 0) + '</strong></div></div>').join('') : '<p class="text-muted">Bạn chưa có đơn hàng nào.</p>') + '</div></div>';
+    $('#logoutBtn').addEventListener('click', async () => { try { await storeApi('auth/logout', { method: 'POST' }); } catch (_) {} storeUser = null; store.set('user', null); showToast('Đã đăng xuất', 'info'); initUserButton(); location.reload(); });
   }
   render(params.get('tab') === 'register' ? 'register' : 'login');
 }
@@ -924,7 +952,7 @@ function initContact() {
   const f = $('.contact-form form');
   if (!f) return;
   f.setAttribute('novalidate', '');
-  f.addEventListener('submit', e => {
+  f.addEventListener('submit', async e => {
     e.preventDefault();
     const name = $('#contact-name').value.trim(), email = $('#contact-email').value.trim(), phone = $('#contact-phone').value.trim(), subject = $('#contact-subject').value, msg = $('#contact-message').value.trim();
     if (name.length < 2) return showToast('Vui lòng nhập họ tên', 'error');
@@ -932,13 +960,20 @@ function initContact() {
     if (!/^(0|\+84)\d{9,10}$/.test(phone.replace(/\s/g, ''))) return showToast('Số điện thoại không hợp lệ', 'error');
     if (!subject) return showToast('Vui lòng chọn chủ đề', 'error');
     if (msg.length < 10) return showToast('Nội dung cần ít nhất 10 ký tự', 'error');
-    const list = store.get('contacts', []); list.push({ id: 'ct' + Date.now(), name, email, phone, subject, msg, date: new Date().toLocaleString('vi-VN'), status: 'Mới', note: '' }); store.set('contacts', list);
-    showToast('Tin nhắn đã được gửi! Chúng tôi sẽ liên hệ lại sớm nhất.'); f.reset();
+    try {
+      await storeApi('contact', { method: 'POST', body: JSON.stringify({ name, email, phone, subject, message: msg }) });
+      showToast('Tin nhắn đã được gửi! Chúng tôi sẽ liên hệ lại sớm nhất.'); f.reset();
+    } catch (error) { showToast(error.message, 'error'); }
   });
 }
 
 /* ---------- Khởi tạo chung ---------- */
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+  await loadStoreData();
+  if (PAGE === 'detail') {
+    const product = byId(params.get('id'));
+    if (product) { try { product.serverReviews = await storeApi('reviews?productId=' + encodeURIComponent(product.id)); } catch (_) { product.serverReviews = []; } }
+  }
   // Menu mobile
   const mt = $('.mobile-toggle'), mo = $('.mobile-menu-overlay'), mc = $('.mobile-menu-close');
   if (mt) mt.addEventListener('click', openMobileMenu);
