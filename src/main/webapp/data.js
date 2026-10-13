@@ -122,9 +122,9 @@ const PRODUCTS = [
 ];
 
 const COUPONS = {
-  SOUNDORA10: { type: 'percent', value: 10, max: 500000, min: 0,       desc: 'Giảm 10% (tối đa 500.000đ)' },
+  SOUNDORA10: { type: 'PERCENTAGE', value: 10, max: 500000, min: 0,       desc: 'Giảm 10% (tối đa 500.000đ)' },
   FREESHIP:   { type: 'ship',    value: 0,  max: 0,      min: 0,       desc: 'Miễn phí vận chuyển' },
-  WELCOME50:  { type: 'amount',  value: 50000, max: 0,   min: 1000000, desc: 'Giảm 50.000đ cho đơn từ 1.000.000đ' }
+  WELCOME50:  { type: 'FIXED_AMOUNT',  value: 50000, max: 0,   min: 1000000, desc: 'Giảm 50.000đ cho đơn từ 1.000.000đ' }
 };
 
 const NEWS = [
@@ -285,6 +285,8 @@ const INFO_PAGES = {
    - Khi có backend thật, chỉ cần thay phần này bằng lời gọi API.
    ============================================================ */
 const SDR = {
+  slug(s) { return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); },
+  hash(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return String(h); },
   read(k, d) { try { const v = localStorage.getItem('sdr_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   write(k, v) { try { localStorage.setItem('sdr_' + k, JSON.stringify(v)); } catch (e) { /* bỏ qua */ } }
 };
@@ -364,3 +366,47 @@ function imgTag(p, cls, i) {
   const fallback = svgArt(p);
   return '<img class="' + (cls || 'pimg') + '" src="' + productImg(p, i).replace(/"/g, '&quot;') + '" alt="' + String(p.name || '').replace(/"/g, '&quot;') + '" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'' + fallback.replace(/'/g, '%27') + '\'">';
 }
+
+
+/* ============================================================
+   [CLASS DIAGRAM] Enum + lược đồ dữ liệu theo báo cáo UML
+   User(role, customerRank) · Order(status, payment, deposit) · Payment · Deposit · Promotion
+   ============================================================ */
+const ORDER_STATUS   = { PENDING: 'Chờ xử lý', COMPLETED: 'Hoàn thành', FAILED: 'Thất bại', CANCELLED: 'Đã hủy' };
+const PAYMENT_METHOD = { CASH: 'Tiền mặt (COD)', E_WALLET: 'Ví điện tử (MoMo / ZaloPay)' };
+const PAYMENT_STATUS = { PENDING: 'Chờ thanh toán', COMPLETED: 'Đã thanh toán', FAILED: 'Thất bại', REFUNDED: 'Đã hoàn tiền' };
+const DEPOSIT_STATUS = { PENDING: 'Chờ xác nhận cọc', COMPLETED: 'Đã đặt cọc', REFUNDED: 'Đã hoàn cọc' };
+const DISCOUNT_TYPE  = { PERCENTAGE: 'Giảm theo %', FIXED_AMOUNT: 'Giảm số tiền' };
+const ROLE_NAMES     = { customer: 'Khách hàng', admin: 'Quản trị viên', manager: 'Quản lý bán hàng', staff: 'Nhân viên', content: 'Biên tập nội dung' };
+const DEPOSIT = { rate: 0.3, from: 5000000 };    // đơn từ 5 triệu được chọn đặt cọc 30%
+
+/* Tính tiền cọc của đơn (Deposit.calculateDeposit) */
+function calculateDeposit(total) { return total >= DEPOSIT.from ? Math.round(total * DEPOSIT.rate / 1000) * 1000 : 0; }
+
+/* Migrate dữ liệu cũ -> lược đồ mới (chạy 1 lần) */
+(function migrateSchema() {
+  if (SDR.read('schema', 0) >= 2) return;
+  const stMap = { 'Đang xử lý': 'PENDING', 'Đã xác nhận': 'PENDING', 'Đang giao': 'PENDING', 'Hoàn thành': 'COMPLETED', 'Đã hủy': 'CANCELLED' };
+  const psMap = { 'Chưa thanh toán': 'PENDING', 'Đã thanh toán': 'COMPLETED', 'Đã hoàn tiền': 'REFUNDED' };
+  const orders = SDR.read('orders', []);
+  orders.forEach(o => {
+    o.status = stMap[o.status] || (ORDER_STATUS[o.status] ? o.status : 'PENDING');
+    if (!o.payment) o.payment = { paymentId: 'PAY' + String(o.code || '').slice(3), paymentMethod: o.pay === 'momo' ? 'E_WALLET' : 'CASH', amount: o.totals ? o.totals.total : 0, paymentDate: o.createdAt || null, paymentStatus: psMap[o.payStatus] || 'PENDING' };
+    if (o.deposit === undefined) o.deposit = null;
+    o.orderId = o.orderId || o.code; o.depositAmount = o.depositAmount || 0;
+    if (o.totals) { o.subtotal = o.totals.sub; o.discount = (o.totals.discount || 0) + (o.totals.tierDiscount || 0); o.totalAmount = o.totals.total; }
+    o.shippingAddress = o.shippingAddress || (o.customer ? o.customer.addr : '');
+    (o.history || []).forEach(h => { h.status = stMap[h.status] || h.status; });
+    delete o.pay; delete o.payStatus;
+  });
+  SDR.write('orders', orders);
+  const cps = SDR.read('a_coupons', null);
+  if (cps) { Object.keys(cps).forEach(k => { if (cps[k].type === 'percent') cps[k].type = 'PERCENTAGE'; if (cps[k].type === 'amount') cps[k].type = 'FIXED_AMOUNT'; }); SDR.write('a_coupons', cps); }
+  // Người dùng: thêm userId + role; gộp tài khoản quản trị cũ (a_staff) vào cùng bảng User
+  const users = SDR.read('users', []);
+  users.forEach((u, i) => { u.role = u.role || 'customer'; u.userId = u.userId || ('U' + String(Date.now() + i).slice(-8)); if (u.locked == null) u.locked = false; });
+  (SDR.read('a_staff', []) || []).forEach(s => { if (!users.some(u => u.email === s.email)) users.push({ userId: 'S' + String(Date.now()).slice(-7) + users.length, name: s.name, email: s.email, phone: '', address: '', pass: s.pass, role: s.role, locked: s.active === false, created: s.created }); });
+  if (!users.some(u => u.role === 'admin')) users.push({ userId: 'ADMIN01', name: 'Quản trị viên', email: 'admin@soundora.vn', phone: '', address: '', pass: SDR.hash('admin123'), role: 'admin', locked: false, created: new Date().toISOString() });
+  SDR.write('users', users);
+  SDR.write('schema', 2);
+})();
