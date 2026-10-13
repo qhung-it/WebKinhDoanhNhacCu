@@ -30,10 +30,17 @@ const SDR = {
 };
 
 const runtimeContextPath = (() => {
-  const firstSegment = location.pathname.split("/").filter(Boolean)[0] || "";
-  return firstSegment && !firstSegment.endsWith(".html")
-    ? "/" + firstSegment
-    : "";
+  // Derive the deployment path from this file instead of assuming that the
+  // first URL segment is the app context. Nested context paths are valid.
+  const scriptUrl = document.currentScript && document.currentScript.src
+    ? new URL(document.currentScript.src, location.href)
+    : null;
+  if (scriptUrl) {
+    const directory = scriptUrl.pathname.slice(0, scriptUrl.pathname.lastIndexOf("/"));
+    return directory === "/" ? "" : directory;
+  }
+  const pageDirectory = location.pathname.slice(0, location.pathname.lastIndexOf("/"));
+  return pageDirectory === "/" ? "" : pageDirectory;
 })();
 
 async function runtimeApi(path) {
@@ -135,10 +142,12 @@ async function loadCatalogIntoRuntime() {
     return {
       id, dbId: databaseId, name: row.productName || row.name || "", cat,
       catName: row.categoryName || "", brand, emoji: extra.emoji || "🎵",
-      price: Number(row.price || 0), old: extra.old ?? null,
+      price: Number(row.price || 0),
+      promoPrice: row.promoPrice == null ? null : Number(row.promoPrice),
+      old: row.old == null ? null : Number(row.old),
       rating: Number(extra.rating || row.rating || 0),
-      reviews: Number(extra.reviews || row.reviews || 0), badge: extra.badge || "",
-      sold: Number(extra.sold || 0), isNew: Boolean(extra.isNew), short,
+      reviews: Number(extra.reviews || row.reviews || 0), badge: row.badge || "",
+      sold: Number(row.sold || 0), isNew: Boolean(extra.isNew), short,
       desc: row.description || "", stock: Number(row.quantity ?? row.stock ?? 0),
       sku: extra.sku || databaseId,
       features: [short].concat(info.features || [], ["Sản phẩm chính hãng " + brand]),

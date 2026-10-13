@@ -3,6 +3,8 @@ package model.dao.intf;
 import model.entity.Product;
 
 import java.util.List;
+import java.util.Map;
+import java.math.BigDecimal;
 
 public interface ProductDAO {
 
@@ -15,6 +17,10 @@ public interface ProductDAO {
     Product findById(String productId);
 
     List<Product> findAll();
+
+    Map<String, Long> findCompletedSalesCounts();
+
+    Map<String, BigDecimal> findActivePromotionPrices();
 
     List<Product> filter(String keyword);
 

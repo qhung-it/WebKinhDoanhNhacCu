@@ -1,6 +1,7 @@
 package controller.User;
 
 import controller.service.impl.ProductServiceImpl;
+import model.dao.impl.ProductDAOImpl;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,6 +12,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @WebServlet("/products/*")
 public class ProductServlet extends jakarta.servlet.http.HttpServlet {
@@ -47,14 +52,24 @@ public class ProductServlet extends jakarta.servlet.http.HttpServlet {
     }
 
     private final ProductServiceImpl service = new ProductServiceImpl();
+    private final ProductDAOImpl catalog = new ProductDAOImpl();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
+        try {
         String id = request.getParameter("id");
         String categoryId = request.getParameter("categoryId");
         String brandId = request.getParameter("brandId");
         String keyword = request.getParameter("q");
+        Map<String, Long> soldCounts = catalog.findCompletedSalesCounts();
+        Map<String, BigDecimal> promotionPrices = catalog.findActivePromotionPrices();
+        Set<String> bestSellerIds = soldCounts.entrySet().stream()
+                .filter(entry -> entry.getValue() > 0)
+                .sorted(Map.Entry.<String, Long>comparingByValue(Comparator.reverseOrder()))
+                .limit(5)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
 
         if (id != null) {
             Product product = service.timSanPham(id);
@@ -63,7 +78,8 @@ public class ProductServlet extends jakarta.servlet.http.HttpServlet {
                         new ApiMessage("Không tìm thấy sản phẩm"));
                 return;
             }
-            send(response, HttpServletResponse.SC_OK, toMap(product));
+            send(response, HttpServletResponse.SC_OK,
+                    toMap(product, soldCounts, promotionPrices, bestSellerIds));
             return;
         }
 
@@ -80,13 +96,22 @@ public class ProductServlet extends jakarta.servlet.http.HttpServlet {
 
         List<Map<String, Object>> result = new ArrayList<>();
         for (Product product : products) {
-            result.add(toMap(product));
+            result.add(toMap(product, soldCounts, promotionPrices, bestSellerIds));
         }
         send(response, HttpServletResponse.SC_OK, result);
+        } catch (RuntimeException error) {
+            error.printStackTrace();
+            send(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    new ApiMessage("Khong the tai san pham tu database: " + error.getMessage()));
+        }
     }
 
-    private Map<String, Object> toMap(Product product) {
+    private Map<String, Object> toMap(Product product, Map<String, Long> soldCounts,
+                                     Map<String, BigDecimal> promotionPrices, Set<String> bestSellerIds) {
         Map<String, Object> result = new LinkedHashMap<>();
+        String productId = product.getProductId();
+        BigDecimal price = product.getPrice();
+        BigDecimal promotionPrice = promotionPrices.get(productId);
         String description = product.getDescription() == null ? "" : product.getDescription();
         String categoryName = product.getCategory() == null ? "" : product.getCategory().getCategoryName();
         String categoryId = product.getCategory() == null ? "" : product.getCategory().getCategoryId();
@@ -106,10 +131,12 @@ public class ProductServlet extends jakarta.servlet.http.HttpServlet {
         result.put("stock", product.getQuantity());
         result.put("image", image);
         result.put("img", image);
-        result.put("old", null);
+        result.put("old", price != null && promotionPrice != null && promotionPrice.compareTo(price) < 0 ? price : null);
+        result.put("promoPrice", promotionPrice);
         result.put("rating", 0);
         result.put("reviews", 0);
-        result.put("badge", "");
+        result.put("badge", bestSellerIds.contains(productId) ? "hot" : "");
+        result.put("sold", soldCounts.getOrDefault(productId, 0L));
         result.put("isNew", false);
         return result;
     }

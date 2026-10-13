@@ -18,6 +18,7 @@ import model.entity.Payment;
 import model.entity.Promotion;
 import model.entity.User;
 import model.dao.impl.PromotionDAOImpl;
+import model.dao.impl.ProductDAOImpl;
 import model.util.JpaUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -68,6 +69,7 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
     private final CustomerRankServiceImpl customerRanks = new CustomerRankServiceImpl();
     private final UserServiceImpl users = new UserServiceImpl();
     private final PromotionDAOImpl promotions = new PromotionDAOImpl();
+    private final ProductDAOImpl products = new ProductDAOImpl();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -143,6 +145,17 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
         }
         BigDecimal shippingFee = calculateShippingFee(subtotal, couponFreeShipping);
         BigDecimal tierDiscount = calculateTierDiscount(user, subtotal.subtract(couponDiscount));
+        Map<String, BigDecimal> promotionPrices = products.findActivePromotionPrices();
+        BigDecimal productPromotionDiscount = BigDecimal.ZERO;
+        for (CartLineItem item : cart.getCartLineItems()) {
+            if (item.getProduct() == null || item.getProduct().getPrice() == null) continue;
+            BigDecimal promoPrice = promotionPrices.get(item.getProduct().getProductId());
+            BigDecimal regularPrice = item.getProduct().getPrice();
+            if (promoPrice != null && promoPrice.compareTo(regularPrice) < 0) {
+                productPromotionDiscount = productPromotionDiscount.add(
+                        regularPrice.subtract(promoPrice).multiply(BigDecimal.valueOf(item.getQuantity())));
+            }
+        }
 
         Order order = new Order();
         order.setOrderId(UUID.randomUUID().toString());
@@ -150,7 +163,7 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
         order.setShippingAddress(address);
         order.setOrderStatus(OrderStatus.PENDING);
         order.setUser(user);
-        order.setDiscount(couponDiscount.add(tierDiscount));
+        order.setDiscount(couponDiscount.add(tierDiscount).add(productPromotionDiscount));
         order.setPromotionCode(promotionCode);
         order.setShippingFee(shippingFee);
         for (CartLineItem cartItem : cart.getCartLineItems()) {

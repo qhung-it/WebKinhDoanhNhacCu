@@ -9,8 +9,11 @@ import model.entity.Product;
 import model.entity.User;
 import model.util.JpaUtil;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class CartDAOImpl implements CartDAO {
+    private static final Logger LOGGER = Logger.getLogger(CartDAOImpl.class.getName());
     @Override
     public Cart findByUserId(String userId) {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
@@ -53,12 +56,25 @@ public class CartDAOImpl implements CartDAO {
         EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
         try {
             em.getTransaction().begin();
-            CartLineItem line = em.createQuery("SELECT i FROM CartLineItem i WHERE i.cart.user.userId = :u AND i.product.productId = :p", CartLineItem.class)
-                    .setParameter("u", userId).setParameter("p", productId).getSingleResult();
-            if (line.getProduct().getQuantity() < quantity) { em.getTransaction().rollback(); return false; }
-            line.setQuantity(quantity); em.getTransaction().commit(); return true;
+            Product product = em.find(Product.class, productId);
+            if (product == null || product.getQuantity() < quantity) {
+                em.getTransaction().rollback();
+                return false;
+            }
+            int updated = em.createQuery("UPDATE CartLineItem i SET i.quantity = :quantity WHERE i.cart.user.userId = :userId AND i.product.productId = :productId")
+                    .setParameter("quantity", quantity)
+                    .setParameter("userId", userId)
+                    .setParameter("productId", productId)
+                    .executeUpdate();
+            if (updated == 0) {
+                em.getTransaction().rollback();
+                return false;
+            }
+            em.getTransaction().commit();
+            return true;
         } catch (RuntimeException e) {
             if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            LOGGER.log(Level.SEVERE, "Unable to update cart quantity (userId=" + userId + ", productId=" + productId + ", quantity=" + quantity + ")", e);
             return false;
         } finally { em.close(); }
     }

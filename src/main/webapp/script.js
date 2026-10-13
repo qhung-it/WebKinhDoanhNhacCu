@@ -43,8 +43,12 @@ function thumbHTML(id, emoji, cls) {
   const p = anyById(id);
   return p ? imgTag(p, cls || "pimg") : "<span>" + (emoji || "🎵") + "</span>";
 }
+const productDisplayPrice = (p) =>
+  p.promoPrice != null && p.promoPrice < p.price ? p.promoPrice : p.price;
 const discountPct = (p) =>
-  p.old && p.old > p.price ? Math.round((1 - p.price / p.old) * 100) : 0;
+  p.price > 0 && productDisplayPrice(p) < p.price
+    ? Math.round((1 - productDisplayPrice(p) / p.price) * 100)
+    : 0;
 
 function stars(r) {
   let h = "";
@@ -65,6 +69,11 @@ const cartSubtotal = () =>
   cart.reduce((s, i) => {
     const p = byId(i.id);
     return s + (p ? p.price * i.qty : 0);
+  }, 0);
+const cartPromotionDiscount = () =>
+  cart.reduce((sum, item) => {
+    const product = byId(item.id);
+    return sum + (product ? (product.price - productDisplayPrice(product)) * item.qty : 0);
   }, 0);
 
 function saveCart() {
@@ -205,6 +214,8 @@ function cardHTML(p, opts) {
   else if (p.badge === "new" || p.isNew)
     badges = '<span class="badge-tag badge-new">Mới</span>';
   else if (d) badges = '<span class="badge-tag badge-sale">-' + d + "%</span>";
+  if (p.stock > 0 && p.badge === "hot" && d)
+    badges += '<span class="badge-tag badge-sale">-' + d + "%</span>";
   const wishOn = wish.includes(p.id);
   const low = p.stock > 0 && p.stock <= 5;
   return (
@@ -253,9 +264,9 @@ function cardHTML(p, opts) {
     p.reviews +
     ")</span></div>" +
     '<div class="card-price"><span class="price-current">' +
-    fmt(p.price) +
+    fmt(productDisplayPrice(p)) +
     "</span>" +
-    (p.old ? '<span class="price-old">' + fmt(p.old) + "</span>" : "") +
+    (d ? '<span class="price-old">' + fmt(p.price) + "</span>" : "") +
     "</div>" +
     (low
       ? '<div class="card-stock-note"><i class="fas fa-exclamation-circle"></i> Chỉ còn ' +
@@ -361,11 +372,11 @@ function openQuickView(id) {
     p.reviews +
     " đánh giá)</span></div>" +
     '<div class="card-price"><span class="price-current" style="font-size:1.5rem">' +
-    fmt(p.price) +
+    fmt(productDisplayPrice(p)) +
     "</span>" +
-    (p.old
+    (d
       ? '<span class="price-old">' +
-        fmt(p.old) +
+        fmt(p.price) +
         '</span><span class="price-save" style="margin-left:8px;background:#FF6B6B;color:#fff;padding:2px 10px;border-radius:50px;font-size:.75rem">-' +
         d +
         "%</span>"
@@ -479,9 +490,14 @@ const contextPath = (() => {
 async function apiRequest(path, method = "GET", data = null) {
   const options = { method, credentials: "same-origin", headers: {} };
   if (data) {
-    options.headers["Content-Type"] =
-      "application/x-www-form-urlencoded;charset=UTF-8";
-    options.body = new URLSearchParams(data);
+    const formData = new URLSearchParams(data);
+    if (method.toUpperCase() === "PUT") {
+      path += (path.includes("?") ? "&" : "?") + formData.toString();
+    } else {
+      options.headers["Content-Type"] =
+        "application/x-www-form-urlencoded;charset=UTF-8";
+      options.body = formData;
+    }
   }
   const response = await fetch(contextPath + path, options);
   const body = await response.json().catch(() => ({}));
@@ -1084,11 +1100,11 @@ async function initDetail() {
       : '<span><i class="fas fa-times-circle" style="color:#d63031"></i> Tình trạng: <strong style="color:#d63031">Hết hàng</strong></span>') +
     "</div>" +
     '<div class="product-price-box"><span class="price-main">' +
-    fmt(p.price) +
+    fmt(productDisplayPrice(p)) +
     "</span>" +
-    (p.old
+    (d
       ? '<span class="price-original">' +
-        fmt(p.old) +
+        fmt(p.price) +
         '</span><span class="price-save">-' +
         d +
         "%</span>"
@@ -1342,14 +1358,16 @@ function calcTotals() {
     tier && tier.discount
       ? Math.round(((sub - discount) * tier.discount) / 100)
       : 0;
+  const promotionDiscount = cartPromotionDiscount();
   const ship = sub === 0 || freeShip ? 0 : SITE.shipFee;
   return {
     sub,
     discount,
+    promotionDiscount,
     tierDiscount,
     tierName: tier ? tier.name : "",
     ship,
-    total: Math.max(0, sub - discount - tierDiscount + ship),
+    total: Math.max(0, sub - discount - tierDiscount - promotionDiscount + ship),
     code: c && sub >= c.min ? code : "",
   };
 }
@@ -1365,6 +1383,11 @@ function summaryHTML(t, withButton) {
     '</span><strong style="color:var(--accent-green)">-' +
     fmt(t.discount) +
     "</strong></div>" +
+    (t.promotionDiscount
+      ? '<div class="sum-row"><span>Khuyến mãi sản phẩm</span><strong style="color:var(--accent-green)">-' +
+        fmt(t.promotionDiscount) +
+        "</strong></div>"
+      : "") +
     (t.tierDiscount
       ? '<div class="sum-row"><span>Ưu đãi hạng ' +
         esc(t.tierName) +
@@ -1429,13 +1452,13 @@ function renderCart() {
           " · " +
           esc(p.catName) +
           '</span><span class="cart-unit">' +
-          fmt(p.price) +
+          fmt(productDisplayPrice(p)) +
           "</span></div>" +
           '<div class="quantity-controls"><button type="button" data-act="minus"><i class="fas fa-minus"></i></button><input type="text" value="' +
           i.qty +
           '" readonly><button type="button" data-act="plus"><i class="fas fa-plus"></i></button></div>' +
           '<div class="cart-line">' +
-          fmt(p.price * i.qty) +
+          fmt(productDisplayPrice(p) * i.qty) +
           "</div>" +
           '<button type="button" class="cart-remove" data-act="remove" title="Xóa"><i class="fas fa-trash-alt"></i></button></div>'
         );
@@ -1469,10 +1492,10 @@ function initCart() {
           showToast("Chỉ còn " + pp.stock + " sản phẩm trong kho", "error");
         else nextQuantity = Math.min(99, item.qty + 1);
       }
-      if (act.dataset.act === "minus") nextQuantity = Math.max(1, item.qty - 1);
+      if (act.dataset.act === "minus") nextQuantity = item ? item.qty - 1 : 0;
       try {
         const p = byId(id);
-        if (act.dataset.act === "remove")
+        if (act.dataset.act === "remove" || (act.dataset.act === "minus" && nextQuantity < 1))
           await apiRequest(
             "/cart?productId=" + encodeURIComponent(p.dbId || p.id),
             "DELETE",
@@ -1612,7 +1635,7 @@ function initCheckout() {
           "</div><small>SL: " +
           i.qty +
           "</small></div><strong>" +
-          fmt(p.price * i.qty) +
+          fmt(productDisplayPrice(p) * i.qty) +
           "</strong></div>"
         );
       })
