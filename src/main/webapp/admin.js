@@ -17,8 +17,7 @@ const ROLES = {
   staff:   { name: 'Nhân viên', pages: ['dashboard', 'orders', 'payments', 'customers', 'reviews', 'contacts', 'inventory'] },
   content: { name: 'Biên tập nội dung', pages: ['dashboard', 'content', 'reviews', 'contacts'] }
 };
-const ORDER_FLOW = ['Đang xử lý', 'Đã xác nhận', 'Đang giao', 'Hoàn thành'];
-const PAY_NAMES = { cod: 'COD', bank: 'Chuyển khoản', momo: 'MoMo / ZaloPay' };
+
 
 /* ---------- Dữ liệu ---------- */
 const load = (k, d) => SDR.read(k, d);
@@ -31,13 +30,10 @@ const getNews = () => load('a_news', null) || JSON.parse(JSON.stringify(NEWS));
 const getCoupons = () => load('a_coupons', null) || JSON.parse(JSON.stringify(COUPONS));
 const getTiers = () => load('a_tiers', null) || JSON.parse(JSON.stringify(DEFAULT_TIERS));
 const getOrders = () => load('orders', []);
-const getUsers = () => load('users', []);
-const getStaff = () => {
-  let s = load('a_staff', null);
-  if (!s) { s = [{ name: 'Quản trị viên', email: 'admin@soundora.vn', pass: hash('admin123'), role: 'admin', active: true, created: new Date().toISOString() }]; save('a_staff', s); }
-  return s;
-};
-const me = () => load('a_session', null);
+const getAllUsers = () => load('users', []);
+const getUsers = () => getAllUsers().filter(u => (u.role || 'customer') === 'customer');   // khách hàng
+const getStaff = () => getAllUsers().filter(u => u.role && u.role !== 'customer');          // nhân sự (admin, manager, staff, content)
+const me = () => { const u = load('user', null); return u && u.role && u.role !== 'customer' ? u : null; };   // cùng phiên đăng nhập với cửa hàng
 function log(action, detail) {
   const l = load('a_log', []); const u = me();
   l.unshift({ at: new Date().toISOString(), by: u ? u.email : '-', action, detail: detail || '' });
@@ -46,7 +42,7 @@ function log(action, detail) {
 const can = page => { const u = me(); if (!u) return false; const r = ROLES[u.role]; return r && (r.pages === '*' || r.pages.includes(page)); };
 const dt = iso => { try { return new Date(iso).toLocaleString('vi-VN'); } catch (e) { return iso || ''; } };
 const tierOf = spend => { const l = getTiers().slice().sort((a, b) => a.min - b.min); let t = l[0]; l.forEach(x => { if (spend >= x.min) t = x; }); return t; };
-const orderSpend = email => getOrders().filter(o => o.user === email && o.status !== 'Đã hủy').reduce((s, o) => s + (o.totals ? o.totals.total : 0), 0);
+const orderSpend = email => getOrders().filter(o => o.user === email && !['CANCELLED', 'FAILED'].includes(o.status)).reduce((s, o) => s + (o.totals ? o.totals.total : 0), 0);
 const orderIso = o => o.createdAt || (function () { const m = String(o.date || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? new Date(+m[3], +m[2] - 1, +m[1]).toISOString() : new Date().toISOString(); })();
 
 /* ---------- UI helpers ---------- */
@@ -69,8 +65,9 @@ function confirmBox(msg, onYes) {
   $('#cfYes', o).onclick = () => { closeModal(); onYes(); };
 }
 const badge = (txt, cls) => '<span class="badge b-' + cls + '">' + esc(txt) + '</span>';
-const orderBadge = s => badge(s, { 'Đang xử lý': 'warn', 'Đã xác nhận': 'info', 'Đang giao': 'p', 'Hoàn thành': 'ok', 'Đã hủy': 'bad' }[s] || 'mute');
-const payBadge = s => badge(s, { 'Chưa thanh toán': 'warn', 'Đã thanh toán': 'ok', 'Đã hoàn tiền': 'info' }[s] || 'mute');
+const orderBadge = s => badge(ORDER_STATUS[s] || s, { PENDING: 'warn', COMPLETED: 'ok', FAILED: 'bad', CANCELLED: 'mute' }[s] || 'mute');
+const payBadge = s => badge(PAYMENT_STATUS[s] || s, { PENDING: 'warn', COMPLETED: 'ok', FAILED: 'bad', REFUNDED: 'info' }[s] || 'mute');
+const depBadge = s => badge(DEPOSIT_STATUS[s] || s, { PENDING: 'warn', COMPLETED: 'ok', REFUNDED: 'info' }[s] || 'mute');
 const empty = (icon, text) => '<div class="empty"><i class="fas ' + icon + '"></i>' + text + '</div>';
 function pager(list, page, per) { const pages = Math.max(1, Math.ceil(list.length / per)); page = Math.min(page, pages); return { items: list.slice((page - 1) * per, page * per), page, pages }; }
 function pagerHTML(pg) { if (pg.pages <= 1) return ''; let h = '<div class="toolbar" style="justify-content:center;margin:16px 0 0">'; for (let i = 1; i <= pg.pages; i++) h += '<button class="btn btn-s ' + (i === pg.page ? 'btn-p' : 'btn-o') + '" data-pg="' + i + '">' + i + '</button>'; return h + '</div>'; }
@@ -100,7 +97,7 @@ const NAV = [
 ];
 const PAGES = {};
 function shell(page) {
-  const u = me(); const newOrders = getOrders().filter(o => o.status === 'Đang xử lý').length; const newMsg = load('contacts', []).filter(c => (c.status || 'Mới') === 'Mới').length;
+  const u = me(); const newOrders = getOrders().filter(o => o.status === 'PENDING').length; const newMsg = load('contacts', []).filter(c => (c.status || 'Mới') === 'Mới').length;
   const title = (NAV.flatMap(g => g[1]).find(x => x[0] === page) || [0, 0, 'Dashboard'])[2];
   App.innerHTML = '<div class="layout"><aside class="side" id="side"><div class="side-brand"><i class="fas fa-music"></i><div>Soundora<small>ADMIN PANEL</small></div></div><nav class="side-nav">' +
     NAV.map(g => {
@@ -114,7 +111,7 @@ function shell(page) {
     '</nav><div class="side-foot"><div class="avatar">' + esc(u.name.charAt(0).toUpperCase()) + '</div><div style="flex:1;min-width:0"><b>' + esc(u.name) + '</b><small>' + esc(ROLES[u.role].name) + '</small></div><button class="btn btn-o btn-s" id="logoutBtn" title="Đăng xuất"><i class="fas fa-sign-out-alt"></i></button></div></aside>' +
     '<div class="main"><header class="top"><button class="burger" id="burger"><i class="fas fa-bars"></i></button><h1>' + title + '</h1><a href="index.html" target="_blank" class="btn btn-o btn-s"><i class="fas fa-external-link-alt"></i> Xem cửa hàng</a></header><div class="content" id="view"></div></div></div>';
   $('#burger').onclick = () => $('#side').classList.toggle('open');
-  $('#logoutBtn').onclick = () => { log('Đăng xuất'); save('a_session', null); route(); };
+  $('#logoutBtn').onclick = () => { log('Đăng xuất'); save('user', null); route(); };
   $$('.side-nav a').forEach(a => a.onclick = () => $('#side').classList.remove('open'));
 }
 function route() {
@@ -128,16 +125,17 @@ function route() {
 window.addEventListener('hashchange', route);
 
 function loginView() {
-  App.innerHTML = '<div class="login-wrap"><form class="login-box" id="lgForm" novalidate><div class="side-brand" style="color:var(--ink);padding:0 0 18px"><i class="fas fa-music" style="color:#fff"></i><div>Soundora<small style="color:var(--mute)">ADMIN PANEL</small></div></div><h2>Đăng nhập quản trị</h2><p>Chỉ dành cho nhân viên Soundora</p>' +
+  App.innerHTML = '<div class="login-wrap"><form class="login-box" id="lgForm" novalidate><div class="side-brand" style="color:var(--ink);padding:0 0 18px"><i class="fas fa-music" style="color:#fff"></i><div>Soundora<small style="color:var(--mute)">ADMIN PANEL</small></div></div><h2>Đăng nhập quản trị</h2><p>Dành cho quản trị viên và nhân viên Soundora</p>' +
     '<div class="fg"><label>Email</label><input class="input" id="lgEmail" type="email" autocomplete="username" placeholder="admin@soundora.vn"></div><div class="fg"><label>Mật khẩu</label><input class="input" id="lgPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>' +
-    '<button class="btn btn-p" style="width:100%;justify-content:center;padding:12px">Đăng nhập</button><div class="hint"><i class="fas fa-info-circle"></i> Demo: <b>admin@soundora.vn</b> / <b>admin123</b>. Dữ liệu lưu trên trình duyệt này.</div><p style="margin:16px 0 0;text-align:center"><a href="index.html" style="color:var(--p)">← Về trang cửa hàng</a></p></form></div>';
+    '<button class="btn btn-p" style="width:100%;justify-content:center;padding:12px"><i class="fas fa-lock"></i> Đăng nhập</button><div class="hint"><i class="fas fa-info-circle"></i> Demo: <b>admin@soundora.vn</b> / <b>admin123</b></div><p style="margin:16px 0 0;text-align:center;font-size:.85rem"><a href="login.html" style="color:var(--p)">Đăng nhập khách hàng</a> · <a href="index.html" style="color:var(--p)">Về cửa hàng</a></p></form></div>';
   $('#lgForm').onsubmit = e => {
     e.preventDefault();
     const em = $('#lgEmail').value.trim().toLowerCase(), pw = $('#lgPass').value;
-    const s = getStaff().find(x => x.email === em && x.pass === hash(pw));
+    const s = getAllUsers().find(x => x.email === em && x.pass === hash(pw));
     if (!s) return toast('Sai email hoặc mật khẩu', 'err');
-    if (!s.active) return toast('Tài khoản quản trị đã bị vô hiệu hóa', 'err');
-    save('a_session', { name: s.name, email: s.email, role: s.role }); log('Đăng nhập'); location.hash = '#/dashboard'; route();
+    if (s.locked) return toast('Tài khoản đã bị khóa/vô hiệu hóa', 'err');
+    if (!s.role || s.role === 'customer') return toast('Tài khoản này không có quyền quản trị', 'err');
+    save('user', { userId: s.userId, name: s.name, email: s.email, phone: s.phone || '', address: s.address || '', role: s.role }); log('Đăng nhập'); location.hash = '#/dashboard'; route();
   };
 }
 
@@ -145,7 +143,7 @@ function loginView() {
    DASHBOARD
    ============================================================ */
 function dayKey(iso) { const d = new Date(iso); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-const validOrders = () => getOrders().filter(o => o.status !== 'Đã hủy');
+const validOrders = () => getOrders().filter(o => !['CANCELLED', 'FAILED'].includes(o.status));
 const revenueOf = list => list.reduce((s, o) => s + (o.totals ? o.totals.total : 0), 0);
 PAGES.dashboard = v => {
   const orders = getOrders(), ok = validOrders(), prods = getProducts();
@@ -164,7 +162,7 @@ PAGES.dashboard = v => {
     kpi('fa-box-open', 'linear-gradient(135deg,#E17055,#FAB1A0)', 'Sắp hết / hết hàng', low.length) + '</div>' +
     '<div class="grid g21" style="margin-bottom:18px"><div class="card"><h3><i class="fas fa-chart-column"></i> Doanh thu 7 ngày gần nhất</h3><div class="bars">' +
     rev.map((r, i) => '<div class="bar"><em>' + (r ? (r >= 1e6 ? (r / 1e6).toFixed(1) + 'tr' : Math.round(r / 1e3) + 'k') : '') + '</em><i style="height:' + Math.max(2, r / max * 100) + '%"></i><span>' + days[i].slice(8) + '/' + days[i].slice(5, 7) + '</span></div>').join('') + '</div></div>' +
-    '<div class="card"><h3><i class="fas fa-list-check"></i> Trạng thái đơn</h3>' + ORDER_FLOW.concat(['Đã hủy']).map(s => '<div class="hbar"><span class="nm">' + s + '</span><div class="tr"><i style="width:' + (orders.length ? stCount(s) / orders.length * 100 : 0) + '%"></i></div><b>' + stCount(s) + '</b></div>').join('') + '</div></div>' +
+    '<div class="card"><h3><i class="fas fa-list-check"></i> Trạng thái đơn</h3>' + Object.keys(ORDER_STATUS).map(s => '<div class="hbar"><span class="nm">' + ORDER_STATUS[s] + '</span><div class="tr"><i style="width:' + (orders.length ? stCount(s) / orders.length * 100 : 0) + '%"></i></div><b>' + stCount(s) + '</b></div>').join('') + '</div></div>' +
     '<div class="grid g2"><div class="card"><h3><i class="fas fa-trophy"></i> Top sản phẩm theo doanh thu</h3>' + (top.length ? top.map(t => '<div class="hbar"><span class="nm" title="' + esc(t.name) + '">' + esc(t.name) + '</span><div class="tr"><i style="width:' + t.rev / top[0].rev * 100 + '%"></i></div><b>' + fmt(t.rev) + '</b></div>').join('') : empty('fa-chart-simple', 'Chưa có đơn hàng nào')) + '</div>' +
     '<div class="card"><h3><i class="fas fa-triangle-exclamation"></i> Cảnh báo tồn kho</h3>' + (low.length ? '<table class="tbl">' + low.slice(0, 8).map(p => '<tr><td><div class="cell"><div class="thumb">' + imgTag(p) + '</div><div><b>' + esc(p.name) + '</b><small>' + esc(p.sku) + '</small></div></div></td><td class="num">' + (p.stock ? badge('Còn ' + p.stock, 'warn') : badge('Hết hàng', 'bad')) + '</td></tr>').join('') + '</table>' : empty('fa-check-circle', 'Tồn kho ổn định')) + '</div></div>';
 };
@@ -198,63 +196,83 @@ PAGES.stats = v => {
    ĐƠN HÀNG
    ============================================================ */
 function updateOrder(code, fn) { const l = getOrders(); const o = l.find(x => x.code === code); if (!o) return null; fn(o); save('orders', l); return o; }
+/* Order.status: PENDING -> COMPLETED | FAILED | CANCELLED (đơn đóng thì không đổi nữa) */
 function changeStatus(code, status) {
   const cur = getOrders().find(o => o.code === code); if (!cur) return;
-  if (cur.status === 'Đã hủy' || cur.status === 'Hoàn thành') return toast('Đơn đã đóng, không thể đổi trạng thái', 'err');
+  if (cur.status !== 'PENDING') return toast('Đơn đã đóng, không thể đổi trạng thái', 'err');
   updateOrder(code, o => {
     o.history = o.history || []; o.history.push({ at: new Date().toISOString(), status, by: me().email });
-    if (status === 'Đã hủy') { o.items.forEach(it => { const p = getProducts().find(x => x.id === it.id); if (p) setStock(it.id, p.stock + it.qty, 'Nhập kho', 'Hủy đơn ' + o.code); }); if (o.payStatus === 'Đã thanh toán') o.payStatus = 'Đã hoàn tiền'; }
-    if (status === 'Hoàn thành' && o.pay === 'cod') o.payStatus = 'Đã thanh toán';
+    if (status === 'FAILED' || status === 'CANCELLED') {
+      o.items.forEach(it => { const p = getProducts().find(x => x.id === it.id); if (p) setStock(it.id, p.stock + it.qty, 'Nhập kho', (status === 'FAILED' ? 'Đơn thất bại ' : 'Hủy đơn ') + o.code); });
+      if (o.payment) o.payment.paymentStatus = o.payment.paymentStatus === 'COMPLETED' ? 'REFUNDED' : 'FAILED';
+      if (o.deposit && o.deposit.status === 'COMPLETED') o.deposit.status = 'REFUNDED';
+    }
+    if (status === 'COMPLETED' && o.payment && o.payment.paymentStatus === 'PENDING') { o.payment.paymentStatus = 'COMPLETED'; o.payment.paymentDate = new Date().toISOString(); }
     o.status = status;
   });
-  log('Cập nhật đơn ' + code, status); toast('Đã cập nhật: ' + status);
+  log('Cập nhật đơn ' + code, ORDER_STATUS[status]); toast('Đã cập nhật: ' + ORDER_STATUS[status]);
 }
 function orderDetail(code, after) {
   const o = getOrders().find(x => x.code === code); if (!o) return;
-  const c = o.customer || {}, t = o.totals || {};
-  const next = ORDER_FLOW[ORDER_FLOW.indexOf(o.status) + 1];
-  const body = '<div class="grid g2" style="margin-bottom:16px"><div><h4 style="margin-bottom:8px">Khách hàng</h4><dl class="kv"><dt>Họ tên</dt><dd>' + esc(c.name) + '</dd><dt>Điện thoại</dt><dd>' + esc(c.phone) + '</dd><dt>Email</dt><dd>' + esc(c.email || '-') + '</dd><dt>Địa chỉ</dt><dd>' + esc(c.addr) + '</dd><dt>Ghi chú</dt><dd>' + esc(c.note || '-') + '</dd></dl></div>' +
-    '<div><h4 style="margin-bottom:8px">Đơn hàng</h4><dl class="kv"><dt>Mã đơn</dt><dd><b>#' + o.code + '</b></dd><dt>Ngày đặt</dt><dd>' + esc(o.date) + '</dd><dt>Trạng thái</dt><dd>' + orderBadge(o.status) + '</dd><dt>Thanh toán</dt><dd>' + esc(PAY_NAMES[o.pay] || o.pay) + ' · ' + payBadge(o.payStatus || 'Chưa thanh toán') + '</dd></dl></div></div>' +
-    '<div class="tbl-wrap"><table class="tbl"><tr><th>Sản phẩm</th><th class="num">Đơn giá</th><th class="num">SL</th><th class="num">Thành tiền</th></tr>' + o.items.map(i => { const p = ALL_PRODUCTS.find(x => x.id === i.id) || getProducts().find(x => x.id === i.id); return '<tr><td><div class="cell"><div class="thumb">' + (p ? imgTag(p) : '') + '</div><b>' + esc(i.name) + '</b></div></td><td class="num">' + fmt(i.price) + '</td><td class="num">' + i.qty + '</td><td class="num">' + fmt(i.price * i.qty) + '</td></tr>'; }).join('') + '</table></div>' +
-    '<dl class="kv" style="margin-top:14px;max-width:340px;margin-left:auto"><dt>Tạm tính</dt><dd class="num">' + fmt(t.sub) + '</dd><dt>Giảm giá</dt><dd class="num">-' + fmt(t.discount) + '</dd>' + (t.tierDiscount ? '<dt>Ưu đãi hạng</dt><dd class="num">-' + fmt(t.tierDiscount) + '</dd>' : '') + '<dt>Vận chuyển</dt><dd class="num">' + fmt(t.ship) + '</dd><dt><b>Tổng cộng</b></dt><dd class="num"><b>' + fmt(t.total) + '</b></dd></dl>' +
-    '<h4 style="margin:16px 0 8px">Lịch sử xử lý</h4><div class="timeline">' + (o.history || [{ at: orderIso(o), status: o.status, by: 'Khách hàng' }]).map(h => '<div><b>' + esc(h.status) + '</b> · ' + dt(h.at) + ' · ' + esc(h.by) + '</div>').join('') + '</div>';
-  const closed = o.status === 'Đã hủy' || o.status === 'Hoàn thành';
-  const m = modal('Đơn hàng #' + o.code, body, (closed ? '' : '<button class="btn btn-d" id="odCancel"><i class="fas fa-ban"></i> Hủy đơn</button>') + (next ? '<button class="btn btn-p" id="odNext"><i class="fas fa-arrow-right"></i> ' + next + '</button>' : '') + '<button class="btn btn-o" data-close>Đóng</button>', 'lg');
-  const nx = $('#odNext', m), cx = $('#odCancel', m);
-  if (nx) nx.onclick = () => { changeStatus(code, next); closeModal(); after(); };
-  if (cx) cx.onclick = () => confirmBox('Hủy đơn #' + code + '? Tồn kho sẽ được hoàn lại.', () => { changeStatus(code, 'Đã hủy'); closeModal(); after(); });
+  const c = o.customer || {}, t = o.totals || {}, pm = o.payment || {};
+  const body = '<div class="grid g2" style="margin-bottom:16px"><div><h4 style="margin-bottom:8px">Khách hàng</h4><dl class="kv"><dt>Họ tên</dt><dd>' + esc(c.name) + '</dd><dt>Điện thoại</dt><dd>' + esc(c.phone) + '</dd><dt>Email</dt><dd>' + esc(c.email || '-') + '</dd><dt>Địa chỉ</dt><dd>' + esc(o.shippingAddress || c.addr) + '</dd><dt>Ghi chú</dt><dd>' + esc(c.note || '-') + '</dd></dl></div>' +
+    '<div><h4 style="margin-bottom:8px">Đơn hàng</h4><dl class="kv"><dt>Mã đơn</dt><dd><b>#' + o.code + '</b></dd><dt>Ngày đặt</dt><dd>' + esc(o.date) + '</dd><dt>Trạng thái</dt><dd>' + orderBadge(o.status) + '</dd><dt>Thanh toán</dt><dd>' + esc(PAYMENT_METHOD[pm.paymentMethod] || '-') + '<br>' + payBadge(pm.paymentStatus) + ' · còn phải thu ' + fmt(pm.amount) + '</dd><dt>Đặt cọc</dt><dd>' + (o.deposit ? fmt(o.deposit.amount) + ' ' + depBadge(o.deposit.status) : 'Không') + '</dd></dl></div></div>' +
+    '<div class="tbl-wrap"><table class="tbl"><tr><th>Sản phẩm</th><th class="num">Đơn giá</th><th class="num">SL</th><th class="num">Thành tiền</th></tr>' + o.items.map(i => { const p = ALL_PRODUCTS.find(x => x.id === i.id); return '<tr><td><div class="cell"><div class="thumb">' + (p ? imgTag(p) : '') + '</div><b>' + esc(i.name) + '</b></div></td><td class="num">' + fmt(i.price) + '</td><td class="num">' + i.qty + '</td><td class="num">' + fmt(i.price * i.qty) + '</td></tr>'; }).join('') + '</table></div>' +
+    '<dl class="kv" style="margin-top:14px;max-width:340px;margin-left:auto"><dt>Tạm tính</dt><dd class="num">' + fmt(o.subtotal != null ? o.subtotal : t.sub) + '</dd><dt>Giảm giá</dt><dd class="num">-' + fmt(o.discount != null ? o.discount : t.discount) + '</dd><dt>Vận chuyển</dt><dd class="num">' + fmt(t.ship) + '</dd><dt><b>Tổng cộng</b></dt><dd class="num"><b>' + fmt(o.totalAmount != null ? o.totalAmount : t.total) + '</b></dd></dl>' +
+    '<h4 style="margin:16px 0 8px">Lịch sử xử lý</h4><div class="timeline">' + (o.history || [{ at: orderIso(o), status: o.status, by: 'Khách hàng' }]).map(h => '<div><b>' + esc(ORDER_STATUS[h.status] || h.status) + '</b> · ' + dt(h.at) + ' · ' + esc(h.by) + '</div>').join('') + '</div>';
+  const open = o.status === 'PENDING';
+  const m = modal('Đơn hàng #' + o.code, body, (open ? '<button class="btn btn-d" id="odCancel"><i class="fas fa-ban"></i> Hủy đơn</button><button class="btn btn-o" id="odFail"><i class="fas fa-triangle-exclamation"></i> Thất bại</button><button class="btn btn-p" id="odDone"><i class="fas fa-check"></i> Hoàn thành</button>' : '') + '<button class="btn btn-o" data-close>Đóng</button>', 'lg');
+  const bind = (id, st, msg) => { const b = $(id, m); if (b) b.onclick = () => confirmBox(msg, () => { changeStatus(code, st); closeModal(); after(); }); };
+  bind('#odDone', 'COMPLETED', 'Xác nhận đơn #' + code + ' đã giao thành công?');
+  bind('#odFail', 'FAILED', 'Đánh dấu đơn #' + code + ' thất bại? Tồn kho sẽ được hoàn lại.');
+  bind('#odCancel', 'CANCELLED', 'Hủy đơn #' + code + '? Tồn kho sẽ được hoàn lại.');
 }
 PAGES.orders = v => {
   let q = '', st = '', page = 1;
   const draw = () => {
     const list = getOrders().filter(o => (!st || o.status === st) && (!q || (o.code + ' ' + (o.customer || {}).name + ' ' + (o.customer || {}).phone).toLowerCase().includes(q)));
     const pg = pager(list, page, 10);
-    $('#odBody').innerHTML = list.length ? '<div class="tbl-wrap"><table class="tbl"><tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày</th><th class="num">Tổng tiền</th><th>Thanh toán</th><th>Trạng thái</th><th></th></tr>' +
-      pg.items.map(o => '<tr><td><b>#' + o.code + '</b></td><td><div class="cell"><div><b>' + esc((o.customer || {}).name) + '</b><small>' + esc((o.customer || {}).phone) + '</small></div></div></td><td>' + esc(o.date) + '</td><td class="num"><b>' + fmt(o.totals.total) + '</b></td><td>' + payBadge(o.payStatus || 'Chưa thanh toán') + '</td><td>' + orderBadge(o.status) + '</td><td class="act"><button class="btn btn-o btn-s" data-view="' + o.code + '"><i class="fas fa-eye"></i> Chi tiết</button></td></tr>').join('') + '</table></div>' + pagerHTML(pg) : '<div class="card">' + empty('fa-receipt', 'Chưa có đơn hàng nào. Đơn đặt từ trang cửa hàng sẽ xuất hiện ở đây.') + '</div>';
+    $('#odBody').innerHTML = list.length ? '<div class="tbl-wrap"><table class="tbl"><tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày</th><th class="num">Tổng tiền</th><th>Thanh toán</th><th>Đặt cọc</th><th>Trạng thái</th><th></th></tr>' +
+      pg.items.map(o => '<tr><td><b>#' + o.code + '</b></td><td><div class="cell"><div><b>' + esc((o.customer || {}).name) + '</b><small>' + esc((o.customer || {}).phone) + '</small></div></div></td><td>' + esc(o.date) + '</td><td class="num"><b>' + fmt(o.totals.total) + '</b></td><td>' + payBadge((o.payment || {}).paymentStatus) + '</td><td>' + (o.deposit ? depBadge(o.deposit.status) : '<small style="color:var(--mute)">-</small>') + '</td><td>' + orderBadge(o.status) + '</td><td class="act"><button class="btn btn-o btn-s" data-view="' + o.code + '"><i class="fas fa-eye"></i> Chi tiết</button></td></tr>').join('') + '</table></div>' + pagerHTML(pg) : '<div class="card">' + empty('fa-receipt', 'Chưa có đơn hàng nào. Đơn đặt từ trang cửa hàng sẽ xuất hiện ở đây.') + '</div>';
     $$('[data-view]', v).forEach(b => b.onclick = () => orderDetail(b.dataset.view, () => { route(); }));
     $$('[data-pg]', v).forEach(b => b.onclick = () => { page = +b.dataset.pg; draw(); });
   };
-  v.innerHTML = '<div class="toolbar"><input class="input" id="odQ" placeholder="Tìm mã đơn, tên, số điện thoại..."><select class="select" id="odSt"><option value="">Tất cả trạng thái</option>' + ORDER_FLOW.concat(['Đã hủy']).map(s => '<option>' + s + '</option>').join('') + '</select><span class="grow"></span><button class="btn btn-o" id="odCsv"><i class="fas fa-file-csv"></i> Xuất CSV</button></div><div id="odBody"></div>';
+  v.innerHTML = '<div class="toolbar"><input class="input" id="odQ" placeholder="Tìm mã đơn, tên, số điện thoại..."><select class="select" id="odSt"><option value="">Tất cả trạng thái</option>' + Object.keys(ORDER_STATUS).map(s => '<option value="' + s + '">' + ORDER_STATUS[s] + '</option>').join('') + '</select><span class="grow"></span><button class="btn btn-o" id="odCsv"><i class="fas fa-file-csv"></i> Xuất CSV</button></div><div id="odBody"></div>';
   $('#odQ').oninput = e => { q = e.target.value.trim().toLowerCase(); page = 1; draw(); }; $('#odSt').onchange = e => { st = e.target.value; page = 1; draw(); };
-  $('#odCsv').onclick = () => csvDownload('don-hang.csv', [['Mã', 'Ngày', 'Khách', 'SĐT', 'Tổng', 'Thanh toán', 'Trạng thái']].concat(getOrders().map(o => [o.code, o.date, (o.customer || {}).name, (o.customer || {}).phone, o.totals.total, o.payStatus, o.status])));
+  $('#odCsv').onclick = () => csvDownload('don-hang.csv', [['Mã', 'Ngày', 'Khách', 'SĐT', 'Tổng', 'Tiền cọc', 'Thanh toán', 'Trạng thái']].concat(getOrders().map(o => [o.code, o.date, (o.customer || {}).name, (o.customer || {}).phone, o.totals.total, o.depositAmount || 0, PAYMENT_STATUS[(o.payment || {}).paymentStatus], ORDER_STATUS[o.status]])));
   draw();
 };
 
 /* ============================================================
-   THANH TOÁN
+   THANH TOÁN & ĐẶT CỌC  (Payment.processPayment/refund · Deposit.processDeposit)
    ============================================================ */
 PAGES.payments = v => {
-  let st = '';
+  let tab = 'pay', st = '';
   const draw = () => {
-    const list = getOrders().filter(o => !st || (o.payStatus || 'Chưa thanh toán') === st);
-    const paid = revenueOf(getOrders().filter(o => o.payStatus === 'Đã thanh toán')), pend = revenueOf(getOrders().filter(o => (o.payStatus || 'Chưa thanh toán') === 'Chưa thanh toán' && o.status !== 'Đã hủy')), ref = revenueOf(getOrders().filter(o => o.payStatus === 'Đã hoàn tiền'));
-    $('#pyBody').innerHTML = '<div class="grid g3" style="margin-bottom:16px"><div class="card kpi"><div class="ic" style="background:var(--ok)"><i class="fas fa-check"></i></div><div><small>Đã thu</small><b>' + fmt(paid) + '</b></div></div><div class="card kpi"><div class="ic" style="background:var(--warn)"><i class="fas fa-hourglass-half"></i></div><div><small>Chờ thu</small><b>' + fmt(pend) + '</b></div></div><div class="card kpi"><div class="ic" style="background:var(--info)"><i class="fas fa-rotate-left"></i></div><div><small>Đã hoàn tiền</small><b>' + fmt(ref) + '</b></div></div></div>' +
-      (list.length ? '<div class="tbl-wrap"><table class="tbl"><tr><th>Mã giao dịch</th><th>Đơn hàng</th><th>Phương thức</th><th class="num">Số tiền</th><th>Trạng thái</th><th></th></tr>' + list.map(o => '<tr><td>TXN-' + o.code.slice(3) + '</td><td>#' + o.code + ' ' + orderBadge(o.status) + '</td><td>' + esc(PAY_NAMES[o.pay] || o.pay) + '</td><td class="num"><b>' + fmt(o.totals.total) + '</b></td><td>' + payBadge(o.payStatus || 'Chưa thanh toán') + '</td><td class="act">' +
-        ((o.payStatus || 'Chưa thanh toán') === 'Chưa thanh toán' && o.status !== 'Đã hủy' ? '<button class="btn btn-ok btn-s" data-paid="' + o.code + '">Xác nhận đã thu</button>' : '') + (o.payStatus === 'Đã thanh toán' ? '<button class="btn btn-d btn-s" data-refund="' + o.code + '">Hoàn tiền</button>' : '') + '</td></tr>').join('') + '</table></div>' : '<div class="card">' + empty('fa-credit-card', 'Chưa có giao dịch') + '</div>');
-    $$('[data-paid]', v).forEach(b => b.onclick = () => { updateOrder(b.dataset.paid, o => { o.payStatus = 'Đã thanh toán'; }); log('Xác nhận thu tiền', b.dataset.paid); toast('Đã xác nhận thanh toán'); draw(); });
-    $$('[data-refund]', v).forEach(b => b.onclick = () => confirmBox('Hoàn tiền đơn #' + b.dataset.refund + '?', () => { updateOrder(b.dataset.refund, o => { o.payStatus = 'Đã hoàn tiền'; }); log('Hoàn tiền', b.dataset.refund); toast('Đã đánh dấu hoàn tiền'); draw(); }));
+    const all = getOrders();
+    const paid = all.filter(o => (o.payment || {}).paymentStatus === 'COMPLETED').reduce((s, o) => s + o.payment.amount, 0) + all.filter(o => o.deposit && o.deposit.status === 'COMPLETED').reduce((s, o) => s + o.deposit.amount, 0);
+    const pend = all.filter(o => o.status === 'PENDING').reduce((s, o) => s + ((o.payment || {}).paymentStatus === 'PENDING' ? o.payment.amount : 0) + (o.deposit && o.deposit.status === 'PENDING' ? o.deposit.amount : 0), 0);
+    const ref = all.filter(o => (o.payment || {}).paymentStatus === 'REFUNDED').reduce((s, o) => s + o.payment.amount, 0) + all.filter(o => o.deposit && o.deposit.status === 'REFUNDED').reduce((s, o) => s + o.deposit.amount, 0);
+    let table = '';
+    if (tab === 'pay') {
+      const list = all.filter(o => !st || (o.payment || {}).paymentStatus === st);
+      table = list.length ? '<div class="tbl-wrap"><table class="tbl"><tr><th>Mã thanh toán</th><th>Đơn hàng</th><th>Phương thức</th><th class="num">Số tiền</th><th>Trạng thái</th><th></th></tr>' + list.map(o => { const p = o.payment || {}; return '<tr><td>' + esc(p.paymentId) + '</td><td>#' + o.code + ' ' + orderBadge(o.status) + '</td><td>' + esc(PAYMENT_METHOD[p.paymentMethod] || '') + '</td><td class="num"><b>' + fmt(p.amount) + '</b></td><td>' + payBadge(p.paymentStatus) + '</td><td class="act">' +
+        (p.paymentStatus === 'PENDING' && o.status === 'PENDING' ? '<button class="btn btn-ok btn-s" data-paid="' + o.code + '">Xác nhận đã thu</button><button class="btn btn-o btn-s" data-pfail="' + o.code + '">Thất bại</button>' : '') + (p.paymentStatus === 'COMPLETED' ? '<button class="btn btn-d btn-s" data-refund="' + o.code + '">Hoàn tiền</button>' : '') + '</td></tr>'; }).join('') + '</table></div>' : '<div class="card">' + empty('fa-credit-card', 'Chưa có giao dịch') + '</div>';
+    } else {
+      const list = all.filter(o => o.deposit);
+      table = list.length ? '<div class="tbl-wrap"><table class="tbl"><tr><th>Mã đặt cọc</th><th>Đơn hàng</th><th>Khách</th><th class="num">Tiền cọc</th><th>Trạng thái</th><th></th></tr>' + list.map(o => { const d = o.deposit; return '<tr><td>' + esc(d.depositId) + '</td><td>#' + o.code + ' ' + orderBadge(o.status) + '</td><td>' + esc((o.customer || {}).name) + '</td><td class="num"><b>' + fmt(d.amount) + '</b><br><small>Còn lại ' + fmt(o.totals.total - d.amount) + '</small></td><td>' + depBadge(d.status) + '</td><td class="act">' +
+        (d.status === 'PENDING' && o.status === 'PENDING' ? '<button class="btn btn-ok btn-s" data-dpaid="' + o.code + '">Xác nhận đã nhận cọc</button>' : '') + (d.status === 'COMPLETED' ? '<button class="btn btn-d btn-s" data-drefund="' + o.code + '">Hoàn cọc</button>' : '') + '</td></tr>'; }).join('') + '</table></div>' : '<div class="card">' + empty('fa-piggy-bank', 'Chưa có đơn nào đặt cọc. Khách có thể đặt cọc ' + Math.round(DEPOSIT.rate * 100) + '% cho đơn từ ' + fmt(DEPOSIT.from) + '.') + '</div>';
+    }
+    $('#pyBody').innerHTML = '<div class="grid g3" style="margin-bottom:16px"><div class="card kpi"><div class="ic" style="background:var(--ok)"><i class="fas fa-check"></i></div><div><small>Đã thu (gồm cọc)</small><b>' + fmt(paid) + '</b></div></div><div class="card kpi"><div class="ic" style="background:var(--warn)"><i class="fas fa-hourglass-half"></i></div><div><small>Chờ thu</small><b>' + fmt(pend) + '</b></div></div><div class="card kpi"><div class="ic" style="background:var(--info)"><i class="fas fa-rotate-left"></i></div><div><small>Đã hoàn</small><b>' + fmt(ref) + '</b></div></div></div>' + table;
+    const upd = (code, fn, msg, act) => { updateOrder(code, fn); log(act, code); toast(msg); draw(); };
+    $$('[data-paid]', v).forEach(b => b.onclick = () => upd(b.dataset.paid, o => { o.payment.paymentStatus = 'COMPLETED'; o.payment.paymentDate = new Date().toISOString(); }, 'Đã xác nhận thanh toán', 'Xác nhận thu tiền'));
+    $$('[data-pfail]', v).forEach(b => b.onclick = () => upd(b.dataset.pfail, o => { o.payment.paymentStatus = 'FAILED'; }, 'Đã đánh dấu thất bại', 'Thanh toán thất bại'));
+    $$('[data-refund]', v).forEach(b => b.onclick = () => confirmBox('Hoàn tiền đơn #' + b.dataset.refund + '?', () => upd(b.dataset.refund, o => { o.payment.paymentStatus = 'REFUNDED'; }, 'Đã hoàn tiền', 'Hoàn tiền')));
+    $$('[data-dpaid]', v).forEach(b => b.onclick = () => upd(b.dataset.dpaid, o => { o.deposit.status = 'COMPLETED'; o.deposit.depositDate = new Date().toISOString(); }, 'Đã xác nhận nhận cọc', 'Xác nhận đặt cọc'));
+    $$('[data-drefund]', v).forEach(b => b.onclick = () => confirmBox('Hoàn cọc đơn #' + b.dataset.drefund + '?', () => upd(b.dataset.drefund, o => { o.deposit.status = 'REFUNDED'; }, 'Đã hoàn cọc', 'Hoàn cọc')));
   };
-  v.innerHTML = '<div class="note"><i class="fas fa-info-circle"></i> Đây là sổ theo dõi giao dịch thủ công. Chưa tích hợp cổng thanh toán thật (VNPay/MoMo) — cần backend để xác thực giao dịch tự động.</div><div class="toolbar"><select class="select" id="pySt"><option value="">Tất cả giao dịch</option><option>Chưa thanh toán</option><option>Đã thanh toán</option><option>Đã hoàn tiền</option></select></div><div id="pyBody"></div>';
+  v.innerHTML = '<div class="note"><i class="fas fa-info-circle"></i> Sổ theo dõi giao dịch thủ công. Chưa tích hợp cổng thanh toán thật (VNPay/MoMo) — cần backend để xác thực tự động.</div><div class="toolbar"><div class="tabs" style="margin:0"><button data-t="pay" class="on">Thanh toán</button><button data-t="dep">Đặt cọc</button></div><select class="select" id="pySt"><option value="">Tất cả</option>' + Object.keys(PAYMENT_STATUS).map(s => '<option value="' + s + '">' + PAYMENT_STATUS[s] + '</option>').join('') + '</select></div><div id="pyBody"></div>';
+  $$('.tabs button', v).forEach(b => b.onclick = () => { tab = b.dataset.t; $$('.tabs button', v).forEach(x => x.classList.toggle('on', x === b)); $('#pySt').style.display = tab === 'pay' ? '' : 'none'; draw(); });
   $('#pySt').onchange = e => { st = e.target.value; draw(); }; draw();
 };
 
@@ -380,15 +398,16 @@ PAGES.promotions = v => {
   const draw = () => {
     const cps = getCoupons(), tiers = getTiers();
     v.innerHTML = '<div class="toolbar"><span class="grow"></span><button class="btn btn-p" id="cpAdd"><i class="fas fa-plus"></i> Thêm mã giảm giá</button></div>' + (Object.keys(cps).length ? '<div class="tbl-wrap"><table class="tbl"><tr><th>Mã</th><th>Ưu đãi</th><th class="num">Đơn tối thiểu</th><th>Thời gian</th><th>Hạng áp dụng</th><th>Bật</th><th></th></tr>' + Object.keys(cps).map(k => { const c = cps[k]; return '<tr><td><b>' + esc(k) + '</b></td><td>' + esc(c.desc) + '</td><td class="num">' + fmt(c.min) + '</td><td>' + (c.start || c.end ? esc((c.start || '...') + ' → ' + (c.end || '...')) : 'Không giới hạn') + '</td><td>' + (c.tier && c.tier !== 'all' ? badge((tiers.find(t => t.key === c.tier) || { name: c.tier }).name + ' trở lên', 'p') : 'Tất cả') + '</td><td><label class="switch"><input type="checkbox" data-tg="' + esc(k) + '"' + (c.active !== false ? ' checked' : '') + '></label></td><td class="act"><button class="btn btn-o btn-s" data-edit="' + esc(k) + '"><i class="fas fa-pen"></i></button><button class="btn btn-d btn-s" data-del="' + esc(k) + '"><i class="fas fa-trash"></i></button></td></tr>'; }).join('') + '</table></div>' : '<div class="card">' + empty('fa-ticket', 'Chưa có mã giảm giá') + '</div>');
-    const form = code => { const c = code ? getCoupons()[code] : { type: 'percent', value: 10, max: 0, min: 0, tier: 'all' };
-      const m = modal(code ? 'Sửa mã ' + esc(code) : 'Thêm mã giảm giá', '<div class="frow"><div class="fg"><label>Mã *</label><input class="input" id="cpCode" value="' + esc(code || '') + '"' + (code ? ' disabled' : '') + ' style="text-transform:uppercase"></div><div class="fg"><label>Loại</label><select class="select" id="cpType"><option value="percent"' + (c.type === 'percent' ? ' selected' : '') + '>Giảm theo %</option><option value="amount"' + (c.type === 'amount' ? ' selected' : '') + '>Giảm số tiền</option><option value="ship"' + (c.type === 'ship' ? ' selected' : '') + '>Miễn phí vận chuyển</option></select></div></div>' +
+    const form = code => { const c = code ? getCoupons()[code] : { type: 'PERCENTAGE', value: 10, max: 0, min: 0, tier: 'all', products: [] };
+      const m = modal(code ? 'Sửa mã ' + esc(code) : 'Thêm mã giảm giá', '<div class="frow"><div class="fg"><label>Mã *</label><input class="input" id="cpCode" value="' + esc(code || '') + '"' + (code ? ' disabled' : '') + ' style="text-transform:uppercase"></div><div class="fg"><label>Loại</label><select class="select" id="cpType"><option value="PERCENTAGE"' + (c.type === 'PERCENTAGE' ? ' selected' : '') + '>Giảm theo % (PERCENTAGE)</option><option value="FIXED_AMOUNT"' + (c.type === 'FIXED_AMOUNT' ? ' selected' : '') + '>Giảm số tiền (FIXED_AMOUNT)</option><option value="ship"' + (c.type === 'ship' ? ' selected' : '') + '>Miễn phí vận chuyển</option></select></div></div>' +
         '<div class="frow3"><div class="fg"><label>Giá trị (% hoặc đ)</label><input class="input" type="number" min="0" id="cpVal" value="' + c.value + '"></div><div class="fg"><label>Giảm tối đa (đ)</label><input class="input" type="number" min="0" id="cpMax" value="' + (c.max || 0) + '"></div><div class="fg"><label>Đơn tối thiểu (đ)</label><input class="input" type="number" min="0" id="cpMin" value="' + c.min + '"></div></div>' +
-        '<div class="frow3"><div class="fg"><label>Bắt đầu</label><input class="input" type="date" id="cpStart" value="' + esc(c.start || '') + '"></div><div class="fg"><label>Kết thúc</label><input class="input" type="date" id="cpEnd" value="' + esc(c.end || '') + '"></div><div class="fg"><label>Hạng khách hàng</label><select class="select" id="cpTier"><option value="all">Tất cả</option>' + tiers.map(t => '<option value="' + t.key + '"' + (c.tier === t.key ? ' selected' : '') + '>' + esc(t.name) + ' trở lên</option>').join('') + '</select></div></div>', '<button class="btn btn-o" data-close>Hủy</button><button class="btn btn-p" id="cpSave">Lưu</button>');
+        '<div class="frow3"><div class="fg"><label>Bắt đầu</label><input class="input" type="date" id="cpStart" value="' + esc(c.start || '') + '"></div><div class="fg"><label>Kết thúc</label><input class="input" type="date" id="cpEnd" value="' + esc(c.end || '') + '"></div><div class="fg"><label>Hạng khách hàng</label><select class="select" id="cpTier"><option value="all">Tất cả</option>' + tiers.map(t => '<option value="' + t.key + '"' + (c.tier === t.key ? ' selected' : '') + '>' + esc(t.name) + ' trở lên</option>').join('') + '</select></div></div>' +
+        '<div class="fg"><label>Sản phẩm áp dụng</label><select class="select" id="cpProds" multiple size="5" style="height:auto">' + getProducts().map(p => '<option value="' + p.id + '"' + ((c.products || []).includes(p.id) ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') + '</select><small>Giữ Ctrl/Cmd để chọn nhiều. Không chọn = áp dụng cho tất cả sản phẩm.</small></div>', '<button class="btn btn-o" data-close>Hủy</button><button class="btn btn-p" id="cpSave">Lưu</button>');
       $('#cpSave', m).onclick = () => { const k = (code || $('#cpCode', m).value.trim().toUpperCase()); if (!/^[A-Z0-9_-]{3,20}$/.test(k)) return toast('Mã gồm 3-20 ký tự chữ/số', 'err'); const all = getCoupons(); if (!code && all[k]) return toast('Mã đã tồn tại', 'err');
         const type = $('#cpType', m).value, value = +$('#cpVal', m).value, max = +$('#cpMax', m).value, min = +$('#cpMin', m).value, start = $('#cpStart', m).value, end = $('#cpEnd', m).value;
-        if (type === 'percent' && (value <= 0 || value > 100)) return toast('Phần trăm phải từ 1 đến 100', 'err'); if (type === 'amount' && value <= 0) return toast('Số tiền giảm phải lớn hơn 0', 'err'); if (start && end && end < start) return toast('Ngày kết thúc phải sau ngày bắt đầu', 'err');
-        const desc = type === 'ship' ? 'Miễn phí vận chuyển' : type === 'percent' ? 'Giảm ' + value + '%' + (max ? ' (tối đa ' + fmt(max) + ')' : '') : 'Giảm ' + fmt(value); const tier = $('#cpTier', m).value;
-        all[k] = { type, value: type === 'ship' ? 0 : value, max: type === 'percent' ? max : 0, min, start, end, tier, active: code ? all[k].active !== false : true, desc: desc + (min ? ' cho đơn từ ' + fmt(min) : '') };
+        if (type === 'PERCENTAGE' && (value <= 0 || value > 100)) return toast('Phần trăm phải từ 1 đến 100', 'err'); if (type === 'FIXED_AMOUNT' && value <= 0) return toast('Số tiền giảm phải lớn hơn 0', 'err'); if (start && end && end < start) return toast('Ngày kết thúc phải sau ngày bắt đầu', 'err');
+        const desc = type === 'ship' ? 'Miễn phí vận chuyển' : type === 'PERCENTAGE' ? 'Giảm ' + value + '%' + (max ? ' (tối đa ' + fmt(max) + ')' : '') : 'Giảm ' + fmt(value); const tier = $('#cpTier', m).value;
+        all[k] = { products: Array.from($('#cpProds', m).selectedOptions).map(o => +o.value), type, value: type === 'ship' ? 0 : value, max: type === 'PERCENTAGE' ? max : 0, min, start, end, tier, active: code ? all[k].active !== false : true, desc: desc + (min ? ' cho đơn từ ' + fmt(min) : '') };
         save('a_coupons', all); log(code ? 'Sửa mã giảm giá' : 'Thêm mã giảm giá', k); toast('Đã lưu'); closeModal(); draw(); }; };
     $('#cpAdd').onclick = () => form(null); $$('[data-edit]', v).forEach(b => b.onclick = () => form(b.dataset.edit));
     $$('[data-tg]', v).forEach(b => b.onchange = () => { const all = getCoupons(); all[b.dataset.tg].active = b.checked; save('a_coupons', all); log('Bật/tắt mã', b.dataset.tg); toast(b.checked ? 'Đã bật mã' : 'Đã tắt mã'); });
@@ -407,7 +426,7 @@ PAGES.customers = v => {
       const sp = orderSpend(u.email), t = tierOf(sp), n = getOrders().filter(o => o.user === u.email).length;
       return '<tr><td><div class="cell"><div class="avatar" style="width:38px;height:38px">' + esc(u.name.charAt(0).toUpperCase()) + '</div><div><b>' + esc(u.name) + '</b><small>' + esc(u.email) + (u.phone ? ' · ' + esc(u.phone) : '') + '</small></div></div></td><td><span class="pill-lg" style="background:' + t.color + '">' + esc(t.name) + '</span></td><td class="num">' + n + '</td><td class="num"><b>' + fmt(sp) + '</b></td><td>' + (u.locked ? badge('Đã khóa', 'bad') : badge('Hoạt động', 'ok')) + '</td><td class="act"><button class="btn btn-o btn-s" data-view="' + esc(u.email) + '">Hồ sơ</button><button class="btn ' + (u.locked ? 'btn-ok' : 'btn-d') + ' btn-s" data-lock="' + esc(u.email) + '">' + (u.locked ? 'Mở khóa' : 'Khóa') + '</button></td></tr>';
     }).join('') + '</table></div>' : '<div class="card">' + empty('fa-users', 'Chưa có khách hàng đăng ký. Khách đăng ký ở trang cửa hàng sẽ xuất hiện tại đây.') + '</div>';
-    $$('[data-lock]', v).forEach(b => b.onclick = () => { const l = getUsers(); const u = l.find(x => x.email === b.dataset.lock); u.locked = !u.locked; save('users', l); log(u.locked ? 'Khóa tài khoản' : 'Mở khóa tài khoản', u.email); toast(u.locked ? 'Đã khóa tài khoản' : 'Đã mở khóa'); draw(); });
+    $$('[data-lock]', v).forEach(b => b.onclick = () => { const l = getAllUsers(); const u = l.find(x => x.email === b.dataset.lock); u.locked = !u.locked; save('users', l); log(u.locked ? 'Khóa tài khoản' : 'Mở khóa tài khoản', u.email); toast(u.locked ? 'Đã khóa tài khoản' : 'Đã mở khóa'); draw(); });
     $$('[data-view]', v).forEach(b => b.onclick = () => { const u = getUsers().find(x => x.email === b.dataset.view); const os = getOrders().filter(o => o.user === u.email); const sp = orderSpend(u.email), t = tierOf(sp);
       modal('Hồ sơ khách hàng', '<dl class="kv" style="margin-bottom:16px"><dt>Họ tên</dt><dd>' + esc(u.name) + '</dd><dt>Email</dt><dd>' + esc(u.email) + '</dd><dt>Điện thoại</dt><dd>' + esc(u.phone || '-') + '</dd><dt>Ngày đăng ký</dt><dd>' + (u.created ? dt(u.created) : '-') + '</dd><dt>Hạng</dt><dd><span class="pill-lg" style="background:' + t.color + '">' + esc(t.name) + '</span> (ưu đãi ' + t.discount + '%)</dd><dt>Tổng chi tiêu</dt><dd><b>' + fmt(sp) + '</b></dd></dl><h4 style="margin-bottom:8px">Lịch sử mua hàng</h4>' + (os.length ? '<div class="tbl-wrap"><table class="tbl"><tr><th>Mã</th><th>Ngày</th><th class="num">Tổng</th><th>Trạng thái</th></tr>' + os.map(o => '<tr><td>#' + o.code + '</td><td>' + esc(o.date) + '</td><td class="num">' + fmt(o.totals.total) + '</td><td>' + orderBadge(o.status) + '</td></tr>').join('') + '</table></div>' : '<p style="color:var(--mute)">Chưa có đơn hàng.</p>'), '<button class="btn btn-o" data-close>Đóng</button>'); });
   };
@@ -495,20 +514,20 @@ PAGES.staff = v => {
   const draw = () => {
     if (tab === 'acc') {
       const list = getStaff();
-      $('#sfBody').innerHTML = '<div class="toolbar"><span class="grow"></span><button class="btn btn-o" id="sfPw"><i class="fas fa-key"></i> Đổi mật khẩu của tôi</button><button class="btn btn-p" id="sfAdd"><i class="fas fa-plus"></i> Thêm tài khoản</button></div><div class="tbl-wrap"><table class="tbl"><tr><th>Nhân viên</th><th>Vai trò</th><th>Quyền truy cập</th><th>Trạng thái</th><th></th></tr>' + list.map((s, i) => '<tr><td><b>' + esc(s.name) + '</b><br><small>' + esc(s.email) + '</small></td><td>' + badge(ROLES[s.role].name, 'p') + '</td><td style="max-width:300px"><small>' + (ROLES[s.role].pages === '*' ? 'Toàn quyền' : ROLES[s.role].pages.join(', ')) + '</small></td><td>' + (s.active ? badge('Hoạt động', 'ok') : badge('Vô hiệu', 'bad')) + '</td><td class="act">' + (s.email !== me().email ? '<button class="btn btn-o btn-s" data-tg="' + i + '">' + (s.active ? 'Vô hiệu' : 'Kích hoạt') + '</button><button class="btn btn-d btn-s" data-del="' + i + '"><i class="fas fa-trash"></i></button>' : '<small>(bạn)</small>') + '</td></tr>').join('') + '</table></div>';
+      $('#sfBody').innerHTML = '<div class="toolbar"><span class="grow"></span><button class="btn btn-o" id="sfPw"><i class="fas fa-key"></i> Đổi mật khẩu của tôi</button><button class="btn btn-p" id="sfAdd"><i class="fas fa-plus"></i> Thêm tài khoản</button></div><div class="tbl-wrap"><table class="tbl"><tr><th>Nhân sự</th><th>Vai trò</th><th>Quyền truy cập</th><th>Trạng thái</th><th></th></tr>' + list.map(s => '<tr><td><b>' + esc(s.name) + '</b><br><small>' + esc(s.email) + '</small></td><td>' + badge(ROLES[s.role] ? ROLES[s.role].name : s.role, 'p') + '</td><td style="max-width:300px"><small>' + (ROLES[s.role] && ROLES[s.role].pages !== '*' ? ROLES[s.role].pages.join(', ') : 'Toàn quyền') + '</small></td><td>' + (!s.locked ? badge('Hoạt động', 'ok') : badge('Vô hiệu', 'bad')) + '</td><td class="act">' + (s.email !== me().email ? '<button class="btn btn-o btn-s" data-tg="' + esc(s.email) + '">' + (!s.locked ? 'Vô hiệu' : 'Kích hoạt') + '</button><button class="btn btn-d btn-s" data-del="' + esc(s.email) + '"><i class="fas fa-trash"></i></button>' : '<small>(bạn)</small>') + '</td></tr>').join('') + '</table></div>';
       $('#sfAdd').onclick = () => { const m = modal('Thêm tài khoản quản trị', '<div class="frow"><div class="fg"><label>Họ tên *</label><input class="input" id="sfName"></div><div class="fg"><label>Email *</label><input class="input" id="sfEmail" type="email"></div></div><div class="frow"><div class="fg"><label>Mật khẩu * (≥ 6 ký tự)</label><input class="input" id="sfPass" type="password"></div><div class="fg"><label>Vai trò</label><select class="select" id="sfRole">' + Object.keys(ROLES).map(r => '<option value="' + r + '">' + ROLES[r].name + '</option>').join('') + '</select></div></div>', '<button class="btn btn-o" data-close>Hủy</button><button class="btn btn-p" id="sfSave">Tạo</button>', 'sm');
-        $('#sfSave', m).onclick = () => { const name = $('#sfName', m).value.trim(), email = $('#sfEmail', m).value.trim().toLowerCase(), pass = $('#sfPass', m).value; if (name.length < 2) return toast('Nhập họ tên', 'err'); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('Email không hợp lệ', 'err'); if (pass.length < 6) return toast('Mật khẩu tối thiểu 6 ký tự', 'err'); const l = getStaff(); if (l.some(x => x.email === email)) return toast('Email đã tồn tại', 'err');
-          l.push({ name, email, pass: hash(pass), role: $('#sfRole', m).value, active: true, created: new Date().toISOString() }); save('a_staff', l); log('Tạo tài khoản quản trị', email); toast('Đã tạo tài khoản'); closeModal(); draw(); }; };
+        $('#sfSave', m).onclick = () => { const name = $('#sfName', m).value.trim(), email = $('#sfEmail', m).value.trim().toLowerCase(), pass = $('#sfPass', m).value; if (name.length < 2) return toast('Nhập họ tên', 'err'); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('Email không hợp lệ', 'err'); if (pass.length < 6) return toast('Mật khẩu tối thiểu 6 ký tự', 'err'); const l = getAllUsers(); if (l.some(x => x.email === email)) return toast('Email đã tồn tại', 'err');
+          l.push({ userId: 'S' + Date.now().toString().slice(-8), name, email, phone: '', address: '', pass: hash(pass), role: $('#sfRole', m).value, locked: false, created: new Date().toISOString() }); save('users', l); log('Tạo tài khoản quản trị', email); toast('Đã tạo tài khoản'); closeModal(); draw(); }; };
       $('#sfPw').onclick = () => { const m = modal('Đổi mật khẩu', '<div class="fg"><label>Mật khẩu hiện tại</label><input class="input" id="pwOld" type="password"></div><div class="fg"><label>Mật khẩu mới (≥ 6 ký tự)</label><input class="input" id="pwNew" type="password"></div>', '<button class="btn btn-o" data-close>Hủy</button><button class="btn btn-p" id="pwSave">Đổi</button>', 'sm');
-        $('#pwSave', m).onclick = () => { const l = getStaff(); const s = l.find(x => x.email === me().email); if (s.pass !== hash($('#pwOld', m).value)) return toast('Mật khẩu hiện tại không đúng', 'err'); if ($('#pwNew', m).value.length < 6) return toast('Mật khẩu mới tối thiểu 6 ký tự', 'err'); s.pass = hash($('#pwNew', m).value); save('a_staff', l); log('Đổi mật khẩu'); toast('Đã đổi mật khẩu'); closeModal(); }; };
-      $$('[data-tg]', v).forEach(b => b.onclick = () => { const l = getStaff(); l[+b.dataset.tg].active = !l[+b.dataset.tg].active; save('a_staff', l); log('Bật/tắt tài khoản QT', l[+b.dataset.tg].email); draw(); });
-      $$('[data-del]', v).forEach(b => b.onclick = () => confirmBox('Xóa tài khoản quản trị này?', () => { const l = getStaff(); const t = l.splice(+b.dataset.del, 1)[0]; save('a_staff', l); log('Xóa tài khoản QT', t.email); draw(); }));
+        $('#pwSave', m).onclick = () => { const l = getAllUsers(); const s = l.find(x => x.email === me().email); if (s.pass !== hash($('#pwOld', m).value)) return toast('Mật khẩu hiện tại không đúng', 'err'); if ($('#pwNew', m).value.length < 6) return toast('Mật khẩu mới tối thiểu 6 ký tự', 'err'); s.pass = hash($('#pwNew', m).value); save('users', l); log('Đổi mật khẩu'); toast('Đã đổi mật khẩu'); closeModal(); }; };
+      $$('[data-tg]', v).forEach(b => b.onclick = () => { const l = getAllUsers(); const s = l.find(x => x.email === b.dataset.tg); s.locked = !s.locked; save('users', l); log('Bật/tắt tài khoản QT', s.email); draw(); });
+      $$('[data-del]', v).forEach(b => b.onclick = () => confirmBox('Xóa tài khoản quản trị này?', () => { const l = getAllUsers(); const i = l.findIndex(x => x.email === b.dataset.del); const t = l.splice(i, 1)[0]; save('users', l); log('Xóa tài khoản QT', t.email); draw(); }));
     } else {
       const l = load('a_log', []);
       $('#sfBody').innerHTML = l.length ? '<div class="tbl-wrap"><table class="tbl"><tr><th>Thời gian</th><th>Người thực hiện</th><th>Thao tác</th><th>Chi tiết</th></tr>' + l.slice(0, 150).map(x => '<tr><td>' + dt(x.at) + '</td><td>' + esc(x.by) + '</td><td><b>' + esc(x.action) + '</b></td><td>' + esc(x.detail) + '</td></tr>').join('') + '</table></div>' : '<div class="card">' + empty('fa-clipboard-list', 'Chưa có nhật ký') + '</div>';
     }
   };
-  v.innerHTML = '<div class="note"><i class="fas fa-shield-halved"></i> Lưu ý bảo mật: phần đăng nhập Admin hiện chạy hoàn toàn trên trình duyệt (chưa có backend) nên chỉ phù hợp để demo/đồ án. Khi triển khai thật cần xác thực và phân quyền phía máy chủ.</div><div class="tabs"><button data-t="acc" class="on">Tài khoản & vai trò</button><button data-t="log">Nhật ký thao tác</button></div><div id="sfBody"></div>';
+  v.innerHTML = '<div class="note"><i class="fas fa-shield-halved"></i> Nhân sự và khách hàng dùng chung bảng User (trường role). Lưu ý: đăng nhập hiện chạy trên trình duyệt (chưa có backend) nên chỉ phù hợp demo/đồ án; triển khai thật cần xác thực phía máy chủ.</div><div class="tabs"><button data-t="acc" class="on">Tài khoản & vai trò</button><button data-t="log">Nhật ký thao tác</button></div><div id="sfBody"></div>';
   $$('.tabs button', v).forEach(b => b.onclick = () => { tab = b.dataset.t; $$('.tabs button', v).forEach(x => x.classList.toggle('on', x === b)); draw(); }); draw();
 };
 
