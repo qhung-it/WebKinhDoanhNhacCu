@@ -3042,3 +3042,55 @@ img.pimg { width: 100%; height: 100%; object-fit: cover; display: block; transit
 .footer-admin-link:hover { opacity: 1; color: var(--primary-light); }
 @media (max-width: 640px) { .product-card .card-body { padding: 12px; } .product-card .price-current { font-size: 1rem; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ============================================================
+   [ĐĂNG NHẬP / TÀI KHOẢN / ĐẶT CỌC]
+   ============================================================ */
+.header-actions .user-btn.has-label { display: inline-flex; align-items: center; gap: 8px; width: auto; padding: 0 14px 0 10px; border-radius: 50px; }
+.user-label { font-size: .85rem; font-weight: 600; white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+.user-btn .user-avatar { width: 30px; height: 30px; font-size: .85rem; }
+.user-menu { position: absolute; top: calc(100% + 12px); right: 0; width: 250px; background: #fff; border-radius: 16px; box-shadow: 0 18px 50px rgba(30,25,80,.22); padding: 8px; display: none; z-index: 300; }
+.user-menu.open { display: block; animation: umIn .18s ease; }
+@keyframes umIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.user-menu .um-head { padding: 12px 12px 14px; border-bottom: 1px solid var(--gray-light); margin-bottom: 6px; display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+.user-menu .um-head small { color: var(--dark-secondary); }
+.user-menu a, .user-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 10px; font-size: .88rem; color: var(--dark); background: none; border: 0; cursor: pointer; text-align: left; font-family: inherit; }
+.user-menu a:hover, .user-menu button:hover { background: var(--primary-ultra-light); color: var(--primary); }
+.user-menu i { width: 18px; text-align: center; color: var(--primary); }
+
+.auth-shell { display: grid; grid-template-columns: 1fr 1.15fr; max-width: 980px; margin: 0 auto; background: #fff; border-radius: 26px; overflow: hidden; box-shadow: 0 24px 70px rgba(60,40,160,.18); }
+.auth-side { background: linear-gradient(150deg, #5848d6, #8f7bff 60%, #b3a8ff); color: #fff; padding: 46px 38px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; }
+.auth-side::after { content: '🎸'; position: absolute; right: -20px; bottom: -30px; font-size: 9rem; opacity: .13; transform: rotate(-18deg); }
+.auth-brand { font-weight: 800; font-size: 1.3rem; margin-bottom: 26px; display: flex; gap: 10px; align-items: center; }
+.auth-side h2 { font-size: 1.7rem; line-height: 1.25; margin-bottom: 10px; }
+.auth-side p { opacity: .9; margin-bottom: 22px; }
+.auth-side ul { list-style: none; display: grid; gap: 12px; padding: 0; }
+.auth-side li { display: flex; gap: 12px; align-items: center; font-size: .92rem; }
+.auth-side li i { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,.18); display: grid; place-items: center; flex: none; }
+.auth-main { padding: 40px 42px; }
+.auth-main h3 { font-size: 1.4rem; margin-bottom: 18px; }
+.auth-tabs { display: flex; gap: 4px; background: var(--gray-ultra-light); padding: 5px; border-radius: 14px; margin-bottom: 18px; }
+.auth-tabs button { flex: 1; padding: 10px; border-radius: 10px; font-weight: 600; border: 0; background: none; cursor: pointer; font-family: inherit; color: var(--dark-secondary); }
+.auth-tabs button.active { background: #fff; color: var(--primary); box-shadow: var(--shadow-sm); }
+.role-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+.role-switch button { padding: 11px; border-radius: 12px; border: 2px solid var(--gray-light); background: #fff; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; gap: 8px; align-items: center; justify-content: center; color: var(--dark-secondary); transition: .2s; }
+.role-switch button.on { border-color: var(--primary); color: var(--primary); background: var(--primary-ultra-light); }
+.auth-hint { background: #FFF4DF; color: #9a6200; padding: 10px 14px; border-radius: 12px; font-size: .85rem; margin-bottom: 14px; }
+.auth-note { text-align: center; margin-top: 14px; font-size: .88rem; color: var(--dark-secondary); }
+.auth-note a { color: var(--primary); font-weight: 600; }
+.pass-wrap { position: relative; } .pass-wrap input { padding-right: 44px; }
+.pass-eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: none; cursor: pointer; color: var(--dark-secondary); padding: 8px; }
+@media (max-width: 800px) { .auth-shell { grid-template-columns: 1fr; } .auth-side { display: none; } .auth-main { padding: 28px 20px; } }
+
+.account-nav { display: grid; gap: 4px; margin: 16px 0 6px; text-align: left; }
+.account-nav button, .account-nav a { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 12px; border: 0; background: none; font-family: inherit; font-size: .9rem; cursor: pointer; color: var(--dark); }
+.account-nav .on, .account-nav button:hover, .account-nav a:hover { background: var(--primary-ultra-light); color: var(--primary); }
+.order-status { padding: 3px 12px; border-radius: 50px; font-size: .75rem; font-weight: 600; background: #FFF4DF; color: #c27a00; }
+.order-status.st-ok { background: #E6F8F3; color: #00936f; } .order-status.st-bad { background: #FDECEA; color: #c0392b; }
+.order-pay { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .82rem; color: var(--dark-secondary); padding: 10px 0; }
+.order-card .btn { margin-top: 10px; }
+
+.deposit-box { margin-top: 18px; padding: 16px; border: 2px dashed var(--primary-light); border-radius: 16px; background: #FAF9FF; }
+.deposit-box > strong { display: block; margin-bottom: 10px; color: var(--primary); }
+.btn-deposit { background: linear-gradient(135deg, #F39C12, #FDCB6E); color: #3b2a00; border: 0; font-weight: 700; }
+.btn-deposit:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(243,156,18,.4); }
