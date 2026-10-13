@@ -151,3 +151,25 @@ function imgTag(p, cls, i) {
   const fallback = svgArt(p);
   return '<img class="' + (cls || 'pimg') + '" src="' + productImg(p, i).replace(/"/g, '&quot;') + '" alt="' + String(p.name || '').replace(/"/g, '&quot;') + '" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'' + fallback.replace(/'/g, '%27') + '\'">';
 }
+// Sắp xếp sản phẩm theo giá tăng dần và gán ảnh tương ứng 1-27
+if (typeof PRODUCTS !== 'undefined' && Array.isArray(PRODUCTS)) {
+  // 1. Sắp xếp danh sách sản phẩm theo giá từ thấp đến cao trước
+  PRODUCTS.sort((a, b) => a.price - b.price);
+
+  // Danh sách vị trí các ảnh có định dạng .webp và .gif
+  const webpImgNums = [12, 14, 18, 19, 20, 24, 25, 26, 27];
+  const gifImgNums = [23];
+
+  // 2. Gán ảnh tương ứng từ 1 đến 27 cho từng sản phẩm đã sắp xếp theo giá
+  PRODUCTS.forEach((p, index) => {
+    const imgNum = index + 1; // Số thứ tự ảnh tương ứng (từ 1 đến 27)
+
+    if (webpImgNums.includes(imgNum)) {
+      p.img = `images/${imgNum}.webp`;
+    } else if (gifImgNums.includes(imgNum)) {
+      p.img = `images/${imgNum}.gif`;
+    } else {
+      p.img = `images/${imgNum}.jpg`;
+    }
+  });
+}
