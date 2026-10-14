@@ -41,7 +41,9 @@ public class Promotion {
     private String description;
 
     @Column(name = "free_shipping")
-    private boolean freeShipping;
+    // Existing databases may contain NULL despite this flag defaulting to false.
+    // Use the wrapper so Hibernate can read those legacy rows without failing.
+    private Boolean freeShipping = false;
 
     @Column(name = "active")
     private Boolean active = true;
@@ -128,7 +130,7 @@ public class Promotion {
     }
     
     public boolean isFreeShipping() {
-        return freeShipping;
+        return Boolean.TRUE.equals(freeShipping);
     }
     
     public void setFreeShipping(boolean freeShipping) {

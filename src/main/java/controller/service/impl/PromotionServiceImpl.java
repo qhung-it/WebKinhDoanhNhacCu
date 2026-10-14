@@ -17,17 +17,23 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public void themKhuyenMai(Promotion promotion) {
-        promotionDAO.save(promotion);
+        if (!promotionDAO.save(promotion)) {
+            throw new IllegalStateException("Không lưu được khuyến mãi vào database");
+        }
     }
 
     @Override
     public void suaKhuyenMai(Promotion promotion) {
-        promotionDAO.update(promotion);
+        if (!promotionDAO.update(promotion)) {
+            throw new IllegalStateException("Không cập nhật được khuyến mãi trong database");
+        }
     }
 
     @Override
     public void xoaKhuyenMai(String promotionId) {
-        promotionDAO.delete(promotionId);
+        if (!promotionDAO.delete(promotionId)) {
+            throw new IllegalStateException("Không xóa được khuyến mãi khỏi database");
+        }
     }
 
     @Override

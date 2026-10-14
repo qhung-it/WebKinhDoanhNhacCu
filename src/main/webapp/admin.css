@@ -362,6 +362,11 @@ table.tbl {
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
+.tbl td small {
+  display: block;
+  margin-top: 4px;
+  color: var(--mute);
+}
 .tbl tr:hover td {
   background: #fbfbfe;
 }
