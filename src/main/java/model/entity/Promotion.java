@@ -6,8 +6,9 @@ import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "promotion")
@@ -60,7 +61,7 @@ public class Promotion {
             joinColumns = @JoinColumn(name = "promotion_id"),
             inverseJoinColumns = @JoinColumn(name = "product_id")
     )
-    private List<Product> products = new ArrayList<>();
+    private Set<Product> products = new LinkedHashSet<>();
 
     @ManyToMany()
     @JoinTable(
@@ -68,7 +69,7 @@ public class Promotion {
             joinColumns = @JoinColumn(name = "promotion_id"),
             inverseJoinColumns = @JoinColumn(name = "rank_id")
     )
-    private List<CustomerRank> customerRanks = new ArrayList<>();
+    private Set<CustomerRank> customerRanks = new LinkedHashSet<>();
 
     public String getPromotionId() {
         return promotionId;
@@ -162,20 +163,20 @@ public class Promotion {
         this.endDateTime = endDateTime;
     }
 
-    public List<Product> getProducts() {
+    public Set<Product> getProducts() {
         return products;
     }
 
-    public void setProducts(List<Product> products) {
-        this.products = products;
+    public void setProducts(Collection<Product> products) {
+        this.products = products == null ? new LinkedHashSet<>() : new LinkedHashSet<>(products);
     }
 
-    public List<CustomerRank> getCustomerRanks() {
+    public Set<CustomerRank> getCustomerRanks() {
         return customerRanks;
     }
 
-    public void setCustomerRanks(List<CustomerRank> customerRanks) {
-        this.customerRanks = customerRanks;
+    public void setCustomerRanks(Collection<CustomerRank> customerRanks) {
+        this.customerRanks = customerRanks == null ? new LinkedHashSet<>() : new LinkedHashSet<>(customerRanks);
     }
 
     public boolean isActive() {

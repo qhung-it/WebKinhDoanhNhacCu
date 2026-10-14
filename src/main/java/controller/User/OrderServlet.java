@@ -246,8 +246,8 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
         BigDecimal freeShippingFrom = new BigDecimal("500000");
         BigDecimal standardFee = new BigDecimal("30000");
         try (jakarta.persistence.EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager()) {
-            String json = (String) em.createNativeQuery(
-                    "SELECT json_data FROM dbo.site_content WHERE content_key = :contentKey")
+            String json = em.createQuery(
+                    "SELECT s.jsonData FROM SiteContent s WHERE s.contentKey = :contentKey", String.class)
                     .setParameter("contentKey", "soundora").getSingleResult();
             com.google.gson.JsonObject site = com.google.gson.JsonParser.parseString(json)
                     .getAsJsonObject().getAsJsonObject("site");
@@ -272,8 +272,8 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
                     .getSingleResult();
             java.math.BigDecimal spending = value instanceof BigDecimal
                     ? (BigDecimal) value : new BigDecimal(String.valueOf(value));
-            String json = (String) em.createNativeQuery(
-                    "SELECT json_data FROM dbo.site_content WHERE content_key = :contentKey")
+            String json = em.createQuery(
+                    "SELECT s.jsonData FROM SiteContent s WHERE s.contentKey = :contentKey", String.class)
                     .setParameter("contentKey", "soundora").getSingleResult();
             com.google.gson.JsonArray tiers = com.google.gson.JsonParser.parseString(json)
                     .getAsJsonObject().getAsJsonArray("tiers");

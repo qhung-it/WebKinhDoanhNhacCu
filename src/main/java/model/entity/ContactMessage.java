@@ -3,6 +3,7 @@ package model.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.Nationalized;
 
@@ -31,7 +32,8 @@ public class ContactMessage {
     private String subject;
 
     @Nationalized
-    @Column(name = "message", nullable = false, columnDefinition = "nvarchar(max)")
+    @Lob
+    @Column(name = "message", nullable = false)
     private String message;
 
     @Nationalized
@@ -39,7 +41,8 @@ public class ContactMessage {
     private String status = "Mới";
 
     @Nationalized
-    @Column(name = "internal_note", columnDefinition = "nvarchar(max)")
+    @Lob
+    @Column(name = "internal_note")
     private String note;
 
     @Column(name = "created_at", nullable = false)

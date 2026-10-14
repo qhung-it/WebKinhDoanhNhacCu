@@ -15,8 +15,8 @@ public class SiteContentServlet extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         try (EntityManager entityManager = JpaUtil.getEntityManagerFactory().createEntityManager()) {
-            String payload = (String) entityManager.createNativeQuery(
-                    "SELECT json_data FROM dbo.site_content WHERE content_key = :contentKey")
+            String payload = entityManager.createQuery(
+                    "SELECT s.jsonData FROM SiteContent s WHERE s.contentKey = :contentKey", String.class)
                     .setParameter("contentKey", "soundora")
                     .getSingleResult();
             com.google.gson.JsonParser.parseString(payload);

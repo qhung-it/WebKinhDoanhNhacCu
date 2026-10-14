@@ -6,7 +6,10 @@ import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "customer_rank")
@@ -27,7 +30,7 @@ public class CustomerRank {
     private List<User> users = new ArrayList<>();
 
     @ManyToMany(mappedBy = "customerRanks")
-    private List<Promotion> promotions = new ArrayList<>();
+    private Set<Promotion> promotions = new LinkedHashSet<>();
 
     public String getRankId() {
         return rankId;
@@ -61,12 +64,12 @@ public class CustomerRank {
         this.users = users;
     }
 
-    public List<Promotion> getPromotions() {
+    public Set<Promotion> getPromotions() {
         return promotions;
     }
 
-    public void setPromotions(List<Promotion> promotions) {
-        this.promotions = promotions;
+    public void setPromotions(Collection<Promotion> promotions) {
+        this.promotions = promotions == null ? new LinkedHashSet<>() : new LinkedHashSet<>(promotions);
     }
 
     public boolean isEligible(BigDecimal totalSpending) {
