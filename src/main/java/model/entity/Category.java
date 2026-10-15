@@ -18,7 +18,7 @@ public class Category {
     private String categoryName;
 
     @Column(name = "status")
-    private boolean status; // Dùng để ẩn hoặc hiện danh mục. Nếu danh mục đó tạm ngưng
+    private boolean status = true; // Danh mục mới mặc định được hiển thị.
 
     @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
     private List<Product> products = new ArrayList<>();

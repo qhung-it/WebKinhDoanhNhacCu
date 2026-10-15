@@ -161,4 +161,8 @@ public class PaymentServiceImpl implements PaymentService {
 
         paymentDAO.update(payment);
     }
+
+    public boolean markReceiptSent(Payment payment) {
+        return payment != null && paymentDAO.update(payment);
+    }
 }

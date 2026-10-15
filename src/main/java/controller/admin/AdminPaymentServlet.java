@@ -2,6 +2,7 @@ package controller.admin;
 
 import controller.service.impl.OrderServiceImpl;
 import controller.service.impl.PaymentServiceImpl;
+import controller.service.impl.PaymentReceiptEmailService;
 import controller.service.intf.OrderService;
 import controller.service.intf.PaymentService;
 import controller.util.ApiUtil;
@@ -25,6 +26,7 @@ public class AdminPaymentServlet extends HttpServlet {
 
     private final OrderService orderService = new OrderServiceImpl();
     private final PaymentService paymentService = new PaymentServiceImpl();
+    private final PaymentReceiptEmailService receiptEmailService = new PaymentReceiptEmailService();
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -83,6 +85,7 @@ public class AdminPaymentServlet extends HttpServlet {
             paymentService.hoanTien(payment.getPaymentId());
         } else {
             paymentService.xuLyThanhToan(payment.getPaymentId());
+            receiptEmailService.sendIfPaid(orderId);
         }
 
         ApiUtil.ok(resp, toMap(orderService.timDonHang(orderId), paymentService.getThanhToanTheoDonHang(orderId)));

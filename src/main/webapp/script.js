@@ -804,12 +804,19 @@ function initProducts() {
       "products-grid" + (state.view === "list" ? " list-view" : "");
     grid.innerHTML = slice.length
       ? slice.map((p) => cardHTML(p)).join("")
-      : emptyState(
-          "🔍",
-          "Không tìm thấy sản phẩm",
-          "Hãy thử bỏ bớt bộ lọc hoặc đổi từ khóa tìm kiếm.",
-          '<button class="btn btn-primary" id="emptyClear">Xóa bộ lọc</button>',
-        );
+      : PRODUCTS.length === 0
+        ? emptyState(
+            "🎸",
+            "Hiện chưa có sản phẩm đang bán",
+            'Hãy kiểm tra sản phẩm trong <a href="admin.html">trang quản trị</a> và bật trạng thái “Đang bán” cùng danh mục tương ứng.',
+            '<a class="btn btn-primary" href="admin.html">Kiểm tra sản phẩm</a>',
+          )
+        : emptyState(
+            "🔍",
+            "Không tìm thấy sản phẩm",
+            "Hãy thử bỏ bớt bộ lọc hoặc đổi từ khóa tìm kiếm.",
+            '<button class="btn btn-primary" id="emptyClear">Xóa bộ lọc</button>',
+          );
     $("#resultCount").innerHTML = list.length
       ? "Hiển thị <strong>" +
         (start + 1) +
@@ -2040,15 +2047,12 @@ function initAuth() {
         if (p1 !== p2)
           return showToast("Mật khẩu nhập lại không khớp", "error");
         try {
-          await apiRequest("/user/register", "POST", {
+          window.currentUser = normalizeUser(await apiRequest("/user/register", "POST", {
             fullName: name,
             email,
             phone,
             password: p1,
-          });
-          window.currentUser = normalizeUser(
-            await apiRequest("/user/login", "POST", { email, password: p1 }),
-          );
+          }));
           await loadUserData();
           showToast("Tạo tài khoản thành công!");
           initUserButton();

@@ -2,6 +2,7 @@ package controller.admin;
 
 import controller.service.impl.OrderServiceImpl;
 import controller.service.impl.PaymentServiceImpl;
+import controller.service.impl.PaymentReceiptEmailService;
 import controller.service.intf.OrderService;
 import controller.service.intf.PaymentService;
 import controller.util.ApiUtil;
@@ -22,6 +23,7 @@ public class AdminOrderServlet extends HttpServlet {
 
     private final OrderService orderService = new OrderServiceImpl();
     private final PaymentService paymentService = new PaymentServiceImpl();
+    private final PaymentReceiptEmailService receiptEmailService = new PaymentReceiptEmailService();
 
     private String payLabel(Payment p) {
         if (p == null || p.getPaymentStatus() == null) return "Chưa thanh toán";
@@ -116,6 +118,7 @@ public class AdminOrderServlet extends HttpServlet {
         String by = admin == null ? "admin" : String.valueOf(admin.get("email"));
         try {
             orderService.capNhatTrangThai(id, st, by);
+            if (st == OrderStatus.COMPLETED) receiptEmailService.sendIfPaid(id);
             ApiUtil.ok(resp, Map.of("ok", true));
         } catch (IllegalStateException e) {
             ApiUtil.error(resp, 409, e.getMessage());

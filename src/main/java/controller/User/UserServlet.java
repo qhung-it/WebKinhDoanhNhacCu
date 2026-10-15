@@ -1,5 +1,6 @@
 package controller.User;
 
+import controller.service.impl.AccountEmailNotificationService;
 import controller.service.impl.OrderServiceImpl;
 import controller.service.impl.UserServiceImpl;
 import jakarta.servlet.annotation.WebServlet;
@@ -51,6 +52,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
 
     private final UserServiceImpl service = new UserServiceImpl();
     private final OrderServiceImpl orders = new OrderServiceImpl();
+    private final AccountEmailNotificationService accountEmailService = new AccountEmailNotificationService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -163,6 +165,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
             return;
         }
         request.getSession(true).setAttribute("user", user);
+        accountEmailService.sendLoginNotification(user);
         send(response, HttpServletResponse.SC_OK, profile(user));
     }
 
