@@ -1,6 +1,8 @@
 package controller.User;
 
 import controller.service.impl.UserFeatureServiceImpl;
+import controller.util.MailUtilRender;
+import jakarta.mail.MessagingException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -61,5 +63,21 @@ public class NewsletterServlet extends jakarta.servlet.http.HttpServlet {
             return;
         }
         send(response, HttpServletResponse.SC_OK, new ApiMessage("Đăng ký nhận tin thành công"));
+        String from = System.getenv("MAIL_USERNAME");
+        String subject = "Welcome to SoundoraTeam!";
+        String body = "Xin chào " + email + "!\n\n"
+                + "🎉 Đăng ký thành công!\n\n"
+                + "Cảm ơn bạn đã quan tâm chính sách của SoundoraTeam.\n\n"
+                + "Bạn sẽ nhận được các thông báo mới nhất"
+                + "về sản phẩm, chương trình khuyến mãi và những tin tức thú vị.\n\n"
+                + "Hy vọng chúng tôi sẽ mang đến cho bạn những thông tin hữu ích \n\n"
+                + "Cảm ơn bạn đã đồng hành!\n\n";
+        boolean isBodyHTML = false;
+        try {
+            MailUtilRender.sendMai(email, from, subject, body, isBodyHTML);
+        } catch (MessagingException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 }

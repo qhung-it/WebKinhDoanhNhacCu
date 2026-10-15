@@ -81,7 +81,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
             return;
         }
         send(response, HttpServletResponse.SC_NOT_FOUND,
-                new ApiMessage("KhĂ´ng tĂ¬m tháº¥y chá»©c nÄƒng"));
+                new ApiMessage("Không tìm thấy chức năng"));
     }
 
     @Override
@@ -105,7 +105,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
         }
         if ("/logout".equals(path)) {
             request.getSession(false).invalidate();
-            send(response, HttpServletResponse.SC_OK, new ApiMessage("ÄĂ£ Ä‘Äƒng xuáº¥t"));
+            send(response, HttpServletResponse.SC_OK, new ApiMessage("Đã đăng xuất"));
             return;
         }
         if ("/profile".equals(path)) {
@@ -117,7 +117,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
             return;
         }
         send(response, HttpServletResponse.SC_NOT_FOUND,
-                new ApiMessage("KhĂ´ng tĂ¬m tháº¥y chá»©c nÄƒng"));
+                new ApiMessage("Không tìm thấy chức năng"));
     }
 
     private void register(HttpServletRequest request, HttpServletResponse response)
@@ -128,7 +128,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
         String phone = required(request, "phone");
         if (name == null || email == null || password == null || phone == null) {
             send(response, HttpServletResponse.SC_BAD_REQUEST,
-                    new ApiMessage("Thiáº¿u thĂ´ng tin Ä‘Äƒng kĂ½"));
+                    new ApiMessage("Thiếu thông tin đăng ký"));
             return;
         }
 
@@ -142,14 +142,14 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
         try {
             if (!service.dangKy(user)) {
                 send(response, HttpServletResponse.SC_CONFLICT,
-                        new ApiMessage("Kh?ng th? t?o t?i kho?n"));
+                        new ApiMessage("Không thể tạo tài khoản"));
                 return;
             }
             send(response, HttpServletResponse.SC_CREATED,
-                    new ApiMessage("ÄÄƒng kĂ½ thĂ nh cĂ´ng"));
+                    new ApiMessage("Đăng ký thành công"));
         } catch (RuntimeException exception) {
             send(response, HttpServletResponse.SC_CONFLICT,
-                    new ApiMessage("Email Ä‘Ă£ Ä‘Æ°á»£c sá»­ dá»¥ng hoáº·c dá»¯ liá»‡u khĂ´ng há»£p lá»‡"));
+                    new ApiMessage("Email đã được sử dụng hoặc dữ liệu không hợp lệ"));
         }
     }
 
@@ -159,7 +159,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
                 required(request, "email"), required(request, "password"));
         if (user == null) {
             send(response, HttpServletResponse.SC_UNAUTHORIZED,
-                    new ApiMessage("ThĂ´ng tin Ä‘Äƒng nháº­p khĂ´ng Ä‘Ăºng"));
+                    new ApiMessage("Thông tin đăng nhập không đúng"));
             return;
         }
         request.getSession(true).setAttribute("user", user);
@@ -173,7 +173,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
         String phone = required(request, "phone");
         if (name == null || email == null || phone == null) {
             send(response, HttpServletResponse.SC_BAD_REQUEST,
-                    new ApiMessage("Thiáº¿u thĂ´ng tin há»“ sÆ¡"));
+                    new ApiMessage("Thiếu thông tin hồ sơ"));
             return;
         }
 
@@ -197,7 +197,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
         if (oldPassword == null || newPassword == null
                 || !oldPassword.equals(user.getPassword()) || newPassword.length() < 8) {
             send(response, HttpServletResponse.SC_BAD_REQUEST,
-                    new ApiMessage("Máº­t kháº©u hiá»‡n táº¡i khĂ´ng Ä‘Ăºng hoáº·c máº­t kháº©u má»›i chÆ°a há»£p lá»‡"));
+                    new ApiMessage("Mật khẩu hiện tại không đúng hoặc mật khẩu mới chưa hợp lệ"));
             return;
         }
 
@@ -205,7 +205,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
         user.setPassword(newPassword);
         request.getSession().setAttribute("user", user);
         send(response, HttpServletResponse.SC_OK,
-                new ApiMessage("Äá»•i máº­t kháº©u thĂ nh cĂ´ng"));
+                new ApiMessage("Đổi mật khẩu thành công"));
     }
 
     private Map<String, Object> profile(User user) {

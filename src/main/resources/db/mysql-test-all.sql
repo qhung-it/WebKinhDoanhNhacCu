@@ -206,13 +206,27 @@ INSERT IGNORE INTO site_content (content_key,json_data) VALUES ('soundora','{"si
 
 COMMIT;
 
--- Row counts for a quick check.
-SELECT 'category' AS table_name, COUNT(*) AS row_count FROM category;
-SELECT 'brand' AS table_name, COUNT(*) AS row_count FROM brand;
-SELECT 'products' AS table_name, COUNT(*) AS row_count FROM products;
-SELECT 'customer_rank' AS table_name, COUNT(*) AS row_count FROM customer_rank;
-SELECT 'users' AS table_name, COUNT(*) AS row_count FROM users;
-SELECT 'promotion' AS table_name, COUNT(*) AS row_count FROM promotion;
-SELECT 'orders' AS table_name, COUNT(*) AS row_count FROM orders;
-SELECT 'news_article' AS table_name, COUNT(*) AS row_count FROM news_article;
-SELECT 'contact_message' AS table_name, COUNT(*) AS row_count FROM contact_message;
+SELECT * FROM admin_audit_log;
+SELECT * FROM brand;
+SELECT * FROM cart;
+SELECT * FROM cart_line_item;
+SELECT * FROM category;
+SELECT * FROM contact_message;
+SELECT * FROM customer_rank;
+SELECT * FROM deposit;
+SELECT * FROM inventory_history;
+SELECT * FROM news_article;
+SELECT * FROM newsletter_subscription;
+SELECT * FROM orders;
+SELECT * FROM order_history;
+SELECT * FROM order_line_item;
+SELECT * FROM payment;
+SELECT * FROM products;
+SELECT * FROM promotion;
+SELECT * FROM promotion_customer_rank;
+SELECT * FROM promotion_product;
+SELECT * FROM review;
+SELECT * FROM site_content;
+SELECT * FROM site_setting;
+SELECT * FROM users;
+SELECT * FROM wishlist_item;
