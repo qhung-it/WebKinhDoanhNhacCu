@@ -153,12 +153,14 @@ public class OrderDAOImpl implements OrderDAO {
                 JpaUtil.getEntityManagerFactory().createEntityManager();
 
         try {
-            return em.createQuery(
+            List<Order> orders = em.createQuery(
                             "SELECT o FROM Order o WHERE o.orderStatus = :status",
                             Order.class
                     )
                     .setParameter("status", status)
                     .getResultList();
+            orders.forEach(o -> o.getHistory().size());
+            return orders;
 
         } finally {
             em.close();

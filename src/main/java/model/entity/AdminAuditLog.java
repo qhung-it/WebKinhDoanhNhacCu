@@ -25,7 +25,8 @@ public class AdminAuditLog {
     private String action;
 
     @Nationalized
-    @Lob @Column(name = "detail")
+    @Lob
+    @Column(name = "detail")
     private String detail;
 
     @Column(name = "created_at", nullable = false)

@@ -1,6 +1,7 @@
 /* Soundora Admin: dữ liệu nghiệp vụ được đọc/ghi qua servlet API. */
    const API = 'admin/api/';
    let SESSION = null;
+   let navRenderVersion = 0;
    const me = () => SESSION;
 
    async function api(path, method, body) {
@@ -82,6 +83,7 @@ const NAV = [
 ];
 const PAGES = {};
 function shell(page) {
+  const renderVersion = ++navRenderVersion;
   const u = me();
   const title = (NAV.flatMap(g => g[1]).find(x => x[0] === page) || [0, 0, 'Dashboard'])[2];
   App.innerHTML = '<div class="layout"><aside class="side" id="side"><div class="side-brand"><i class="fas fa-music"></i><div>Soundora<small>ADMIN PANEL</small></div></div><nav class="side-nav">' +
@@ -101,8 +103,21 @@ function shell(page) {
   };
   $$('.side-nav a').forEach(a => a.onclick = () => $('#side').classList.remove('open'));
   Promise.all([api('orders'), api('cms/contacts')]).then(([orders, contacts]) => {
+    if (renderVersion !== navRenderVersion) return;
     const counts = { orders: orders.filter(o => o.status === 'PROCESSING').length, contacts: contacts.filter(c => c.status === 'Mới').length };
-    Object.keys(counts).forEach(key => { const link = $('[data-nav="' + key + '"]'); if (link && counts[key]) link.insertAdjacentHTML('beforeend', '<span class="cnt">' + counts[key] + '</span>'); });
+    Object.keys(counts).forEach(key => {
+      const link = $('[data-nav="' + key + '"]');
+      if (!link) return;
+      const badges = $$('.cnt', link);
+      const countBadge = badges.shift();
+      badges.forEach(duplicate => duplicate.remove());
+      if (counts[key]) {
+        if (countBadge) countBadge.textContent = String(counts[key]);
+        else link.insertAdjacentHTML('beforeend', '<span class="cnt">' + counts[key] + '</span>');
+      } else if (countBadge) {
+        countBadge.remove();
+      }
+    });
   }).catch(() => {});
 }
 function route() {
@@ -125,7 +140,8 @@ function loginView() {
     if (!em || !pw) return toast('Nhập email và mật khẩu', 'err');
     try {
       SESSION = await api('auth/login', 'POST', { email: em, password: pw });
-      location.hash = '#/dashboard'; route();
+      if (location.hash === '#/dashboard') route();
+      else location.hash = '#/dashboard';
     } catch (e) { /* api() đã hiện toast */ }
   };
 }
@@ -149,7 +165,7 @@ PAGES.dashboard = v => {
     const statusCount = status => orders.filter(o => o.status === status).length;
     v.innerHTML = '<div class="grid g4" style="margin-bottom:18px">' + kpi('fa-sack-dollar','linear-gradient(135deg,#6C5CE7,#A29BFE)','Doanh thu đơn hợp lệ',fmt(revenue(valid))) + kpi('fa-receipt','linear-gradient(135deg,#0984E3,#74B9FF)','Tổng đơn hàng',orders.length + ' <small>(' + orders.filter(o => dayKey(o.createdAt) === today).length + ' hôm nay)</small>') + kpi('fa-users','linear-gradient(135deg,#00B894,#55EFC4)','Khách hàng',customers.length) + kpi('fa-box-open','linear-gradient(135deg,#E17055,#FAB1A0)','Sắp hết / hết hàng',low.length) + '</div>' +
       '<div class="grid g21" style="margin-bottom:18px"><div class="card"><h3><i class="fas fa-chart-column"></i> Doanh thu 7 ngày gần nhất</h3><div class="bars">' + rev.map((r,i) => '<div class="bar"><em>' + (r ? (r >= 1e6 ? (r/1e6).toFixed(1)+'tr' : Math.round(r/1e3)+'k') : '') + '</em><i style="height:'+Math.max(2,r/max*100)+'%"></i><span>'+days[i].slice(8)+'/'+days[i].slice(5,7)+'</span></div>').join('') + '</div></div><div class="card"><h3><i class="fas fa-list-check"></i> Trạng thái đơn</h3>' + Object.keys(statusName).map(s => '<div class="hbar"><span class="nm">'+statusName[s]+'</span><div class="tr"><i style="width:'+(orders.length?statusCount(s)/orders.length*100:0)+'%"></i></div><b>'+statusCount(s)+'</b></div>').join('') + '</div></div>' +
-      '<div class="grid g2"><div class="card"><h3><i class="fas fa-trophy"></i> Top sản phẩm theo doanh thu</h3>' + (top.length ? top.map(t => '<div class="hbar"><span class="nm">'+esc(t.name)+'</span><div class="tr"><i style="width:'+t.rev/top[0].rev*100+'%"></i></div><b>'+fmt(t.rev)+'</b></div>').join('') : empty('fa-chart-simple','Chưa có đơn hàng')) + '</div><div class="card"><h3><i class="fas fa-triangle-exclamation"></i> Cảnh báo tồn kho</h3>' + (low.length ? '<table class="tbl">'+low.slice(0,8).map(p=>'<tr><td><b>'+esc(p.name)+'</b><small>'+esc(p.sku)+'</small></td><td class="num">'+(p.quantity?badge('Còn '+p.quantity,'warn'):badge('Hết hàng','bad'))+'</td></tr>').join('')+'</table>' : empty('fa-check-circle','Tồn kho ổn định')) + '</div></div>';
+      '<div class="grid g2"><div class="card"><h3><i class="fas fa-trophy"></i> Top sản phẩm theo doanh thu</h3>' + (top.length ? top.map(t => '<div class="hbar"><span class="nm">'+esc(t.name)+'</span><div class="tr"><i style="width:'+t.rev/top[0].rev*100+'%"></i></div><b>'+fmt(t.rev)+'</b></div>').join('') : empty('fa-chart-simple','Chưa có đơn hàng')) + '</div><div class="card"><h3><i class="fas fa-triangle-exclamation"></i> Cảnh báo tồn kho</h3>' + (low.length ? '<table class="tbl">'+low.slice(0,8).map(p=>'<tr><td><b>'+esc(p.name)+'</b><small>'+esc(p.sku)+'</small></td><td class="num">'+(p.quantity?badge('Còn '+p.quantity,'warn'):badge('Hết hàng','bad'))+'</td></tr>').join('')+'</table>' : empty('fa-check-circle','Không có sản phẩm còn 5 hoặc ít hơn')) + '</div></div>';
   }).catch(() => { v.innerHTML = '<div class="card">' + empty('fa-circle-exclamation', 'Không tải được dữ liệu tổng quan') + '</div>'; });
 };
 /* ============================================================
@@ -438,7 +454,7 @@ PAGES.promotions = v => {
   let promotions = [], products = [], ranks = [];
   const form = promotion => {
     const m = modal(promotion ? 'Sửa khuyến mãi' : 'Thêm khuyến mãi',
-      '<div class="frow"><div class="fg"><label>Tên khuyến mãi *</label><input class="input" id="pmName" value="' + esc(promotion ? promotion.name : '') + '"></div><div class="fg"><label>Mã giảm giá (để trống nếu không dùng mã)</label><input class="input" id="pmCode" maxlength="50" placeholder="VD: SOUNDORA10" value="' + esc(promotion ? promotion.couponCode || '' : '') + '"></div></div>' +
+      '<div class="frow"><div class="fg"><label>Tên khuyến mãi *</label><input class="input" id="pmName" value="' + esc(promotion ? promotion.name : '') + '"></div><div class="fg"><label>Mã giảm giá (tối đa 20 ký tự)</label><input class="input" id="pmCode" maxlength="20" placeholder="VD: SOUNDORA10" value="' + esc(promotion ? promotion.couponCode || '' : '') + '"></div></div>' +
       '<div class="frow"><div class="fg"><label>Loại giảm</label><select class="select" id="pmType"><option value="PERCENTAGE"' + (!promotion || promotion.discountType === 'PERCENTAGE' ? ' selected' : '') + '>Phần trăm</option><option value="FIXED_AMOUNT"' + (promotion && promotion.discountType === 'FIXED_AMOUNT' ? ' selected' : '') + '>Số tiền cố định</option></select></div><div class="fg"><label>Giá trị *</label><input class="input" id="pmValue" type="number" min="1" value="' + esc(promotion ? promotion.discountValue : '10') + '"></div></div>' +
       '<div class="frow"><div class="fg"><label>Bắt đầu</label><input class="input" type="datetime-local" id="pmStart" value="' + esc(promotion && promotion.startAt ? promotion.startAt.slice(0, 16) : '') + '"></div><div class="fg"><label>Kết thúc</label><input class="input" type="datetime-local" id="pmEnd" value="' + esc(promotion && promotion.endAt ? promotion.endAt.slice(0, 16) : '') + '"></div></div>' +
       '<div class="frow"><div class="fg"><label>Sản phẩm áp dụng *</label><select class="select" id="pmProducts" multiple size="6">' + products.map(p => '<option value="' + esc(p.id) + '"' + (promotion && promotion.productIds.includes(p.id) ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') + '</select><small>Giữ Ctrl để chọn nhiều sản phẩm.</small></div><div class="fg"><label>Hạng thành viên *</label><select class="select" id="pmRanks" multiple size="6">' + ranks.map(r => '<option value="' + esc(r.id) + '"' + (promotion && promotion.rankIds.includes(r.id) ? ' selected' : '') + '>' + esc(r.name) + '</option>').join('') + '</select><small>Giữ Ctrl để chọn nhiều hạng.</small></div></div>',
@@ -464,8 +480,21 @@ PAGES.promotions = v => {
     $$('[data-del]', v).forEach(b => b.onclick = () => { const p = promotions.find(x => x.id === b.dataset.del); confirmBox('Xóa khuyến mãi <b>' + esc(p.name) + '</b>?', async () => { try { await api('promotions/' + encodeURIComponent(p.id), 'DELETE'); log('Xóa khuyến mãi', p.name); toast('Đã xóa'); await reload(); } catch (e) {} }); });
   };
   const reload = async () => {
-    try { [promotions, products, ranks] = await Promise.all([api('promotions'), api('products'), api('ranks')]); draw(); }
-    catch (e) { v.innerHTML = '<div class="card">' + empty('fa-circle-exclamation', 'Không tải được dữ liệu khuyến mãi') + '</div>'; }
+    try {
+      [promotions, products, ranks] = await Promise.all([
+        api('promotions').catch(e => { throw new Error('khuyến mãi: ' + e.message); }),
+        api('products').catch(e => { throw new Error('sản phẩm: ' + e.message); }),
+        api('ranks').catch(e => { throw new Error('hạng thành viên: ' + e.message); })
+      ]);
+      promotions = Array.isArray(promotions) ? promotions : [];
+      products = Array.isArray(products) ? products : [];
+      ranks = Array.isArray(ranks) ? ranks : [];
+      draw();
+    }
+    catch (e) {
+      console.error('Không tải được dữ liệu trang khuyến mãi:', e);
+      v.innerHTML = '<div class="card">' + empty('fa-circle-exclamation', 'Không tải được dữ liệu khuyến mãi: ' + esc(e.message || 'Lỗi kết nối API')) + '</div>';
+    }
   };
   reload();
 };

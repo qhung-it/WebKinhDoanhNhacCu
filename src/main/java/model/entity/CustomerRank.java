@@ -20,7 +20,7 @@ public class CustomerRank {
     @Column(name = "rank_name")
     private RankName rankName;
 
-    @Column(name = "min_spending")
+    @Column(name = "min_spending", precision = 19, scale = 2)
     private BigDecimal minSpending;
 
     @OneToMany(mappedBy = "customerRank")

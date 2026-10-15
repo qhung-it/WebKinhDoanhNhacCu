@@ -38,9 +38,14 @@ public class AdminPromotionServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        ApiUtil.ok(resp, promotionService.getDanhSachKhuyenMai().stream()
-                .map(this::toMap)
-                .collect(Collectors.toList()));
+        try {
+            ApiUtil.ok(resp, promotionService.getDanhSachKhuyenMai().stream()
+                    .map(this::toMap)
+                    .collect(Collectors.toList()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            ApiUtil.error(resp, 500, "Không đọc được khuyến mãi. Kiểm tra cấu trúc bảng promotion và các bảng liên kết.");
+        }
     }
 
     @Override
@@ -53,6 +58,9 @@ public class AdminPromotionServlet extends HttpServlet {
             ApiUtil.json(resp, 201, toMap(promotion));
         } catch (IllegalArgumentException e) {
             ApiUtil.error(resp, 400, e.getMessage());
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            ApiUtil.error(resp, 500, e.getMessage());
         }
     }
 
@@ -72,6 +80,9 @@ public class AdminPromotionServlet extends HttpServlet {
             ApiUtil.ok(resp, toMap(promotion));
         } catch (IllegalArgumentException e) {
             ApiUtil.error(resp, 400, e.getMessage());
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            ApiUtil.error(resp, 500, e.getMessage());
         }
     }
 
@@ -120,8 +131,8 @@ public class AdminPromotionServlet extends HttpServlet {
         final String code = (rawCode == null || rawCode.isBlank())
                 ? null : rawCode.trim().toUpperCase(java.util.Locale.ROOT);
 
-        if (code != null && !code.matches("[A-Z0-9_-]{3,50}")) {
-            throw new IllegalArgumentException("Mã giảm giá chỉ gồm 3–50 ký tự A-Z, 0-9, dấu gạch ngang hoặc gạch dưới");
+        if (code != null && !code.matches("[A-Z0-9_-]{3,20}")) {
+            throw new IllegalArgumentException("Mã giảm giá chỉ gồm 3–20 ký tự A-Z, 0-9, dấu gạch ngang hoặc gạch dưới");
         }
 
         if (code != null && promotionService.getDanhSachKhuyenMai().stream()

@@ -15,7 +15,7 @@ public class OrderLineItem {
     @JoinColumn(name = "product_id")
     private Product product;
 
-    @Column(name = "unit_price")
+    @Column(name = "unit_price", precision = 19, scale = 2)
     private BigDecimal unitPrice;
 
     @Column(name = "quantity")

@@ -51,7 +51,12 @@ public class AdminCmsServlet extends HttpServlet {
         String p = path(req);
 
         if (p.equals("/contacts")) {
-            ApiUtil.ok(resp, contacts.list().stream().map(this::contactMap).collect(Collectors.toList()));
+            try {
+                ApiUtil.ok(resp, contacts.list().stream().map(this::contactMap).collect(Collectors.toList()));
+            } catch (Exception e) {
+                e.printStackTrace();
+                ApiUtil.error(resp, 500, "Không đọc được liên hệ. Kiểm tra bảng contact_message trong database.");
+            }
         } else if (p.equals("/news")) {
             ApiUtil.ok(resp, news.list().stream().map(this::newsMap).collect(Collectors.toList()));
         } else if (p.equals("/settings")) {
