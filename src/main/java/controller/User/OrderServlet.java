@@ -2,7 +2,6 @@ package controller.User;
 
 import controller.service.impl.CartServiceImpl;
 import controller.service.impl.OrderServiceImpl;
-import controller.service.impl.PaymentServiceImpl;
 import controller.service.impl.CustomerRankServiceImpl;
 import controller.service.impl.UserServiceImpl;
 import jakarta.servlet.annotation.WebServlet;
@@ -14,7 +13,7 @@ import model.entity.Cart;
 import model.entity.CartLineItem;
 import model.entity.Order;
 import model.entity.OrderLineItem;
-import model.entity.Payment;
+import model.entity.Deposit;
 import model.entity.Product;
 import model.entity.Promotion;
 import model.entity.User;
@@ -66,7 +65,6 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
 
     private final OrderServiceImpl orders = new OrderServiceImpl();
     private final CartServiceImpl carts = new CartServiceImpl();
-    private final PaymentServiceImpl payments = new PaymentServiceImpl();
     private final CustomerRankServiceImpl customerRanks = new CustomerRankServiceImpl();
     private final UserServiceImpl users = new UserServiceImpl();
     private final PromotionDAOImpl promotions = new PromotionDAOImpl();
@@ -184,19 +182,16 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
             order.addLineItem(line);
         }
 
-        if (!orders.taoDonHang(order)) {
-            send(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    new ApiMessage("Không thể tạo đơn hàng"));
-            return;
-        }
-        Payment payment = new Payment();
-        payment.setPaymentId(UUID.randomUUID().toString());
-        payment.setOrder(order);
-        payment.setAmount(order.getTotalAmount());
-        payment.setPaymentMethod(resolvePaymentMethod(request.getParameter("paymentMethod")));
-        if (!payments.taoThanhToan(payment)) {
-            send(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    new ApiMessage("Không thể tạo giao dịch thanh toán cho đơn hàng"));
+        boolean depositSelected = "true".equalsIgnoreCase(request.getParameter("deposit"));
+        try {
+            if (!orders.taoDonHang(order, resolvePaymentMethod(request.getParameter("paymentMethod")),
+                    depositSelected)) {
+                send(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                        new ApiMessage("Order creation failed"));
+                return;
+            }
+        } catch (IllegalArgumentException exception) {
+            send(response, HttpServletResponse.SC_BAD_REQUEST, new ApiMessage(exception.getMessage()));
             return;
         }
         try {
@@ -333,6 +328,13 @@ public class OrderServlet extends jakarta.servlet.http.HttpServlet {
         result.put("shippingFee", order.getShippingFee());
         result.put("promotionCode", order.getPromotionCode());
         result.put("shippingAddress", order.getShippingAddress());
+        Deposit deposit = order.getDeposit();
+        BigDecimal depositAmount = deposit == null || deposit.getAmount() == null
+                ? BigDecimal.ZERO : deposit.getAmount();
+        result.put("depositAmount", depositAmount);
+        result.put("depositStatus", deposit == null || deposit.getDepositStatus() == null
+                ? null : deposit.getDepositStatus().name());
+        result.put("remainingAmount", order.getTotalAmount().subtract(depositAmount).max(BigDecimal.ZERO));
         return result;
     }
 }

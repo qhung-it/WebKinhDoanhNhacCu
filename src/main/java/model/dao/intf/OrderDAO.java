@@ -2,6 +2,8 @@ package model.dao.intf;
 
 import model.OrderStatus;
 import model.entity.Order;
+import model.entity.Payment;
+import model.entity.Deposit;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -9,6 +11,8 @@ import java.util.List;
 public interface OrderDAO {
 
     boolean save(Order order);
+
+    boolean save(Order order, Payment payment, Deposit deposit);
 
     boolean update(Order order);
 

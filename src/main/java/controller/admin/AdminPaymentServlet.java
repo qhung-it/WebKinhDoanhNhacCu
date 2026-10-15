@@ -5,7 +5,10 @@ import controller.service.impl.PaymentServiceImpl;
 import controller.service.intf.OrderService;
 import controller.service.intf.PaymentService;
 import controller.util.ApiUtil;
+import com.google.gson.JsonObject;
 import model.PaymentStatus;
+import model.OrderStatus;
+import model.entity.Deposit;
 import model.entity.Order;
 import model.entity.Payment;
 
@@ -15,6 +18,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,30 +65,47 @@ public class AdminPaymentServlet extends HttpServlet {
             return;
         }
 
-        String rawStatus = ApiUtil.str(ApiUtil.body(req), "status");
+        JsonObject body = ApiUtil.body(req);
+        String rawStatus = ApiUtil.str(body, "status");
         PaymentStatus status;
         try {
             status = PaymentStatus.valueOf(rawStatus == null ? "" : rawStatus.toUpperCase());
         } catch (IllegalArgumentException e) {
-            ApiUtil.error(resp, 400, "Trạng thái thanh toán không hợp lệ");
+            ApiUtil.error(resp, 400, "Invalid payment status");
             return;
         }
-
         if (status == PaymentStatus.PENDING || status == PaymentStatus.FAILED) {
-            ApiUtil.error(resp, 400, "Chỉ chấp nhận xác nhận đã thanh toán hoặc hoàn tiền");
+            ApiUtil.error(resp, 400, "Only collection confirmation or refund is supported");
             return;
         }
 
         if (status == PaymentStatus.REFUNDED) {
             if (payment.getPaymentStatus() != PaymentStatus.COMPLETED) {
-                ApiUtil.error(resp, 409, "Chỉ hoàn tiền cho giao dịch đã thanh toán");
+                ApiUtil.error(resp, 409, "Only completed payments can be refunded");
                 return;
             }
             paymentService.hoanTien(payment.getPaymentId());
         } else {
-            paymentService.xuLyThanhToan(payment.getPaymentId());
+            Map<String, Object> admin = (Map<String, Object>) req.getSession().getAttribute("adminUser");
+            String changedBy = admin == null ? "admin" : String.valueOf(admin.get("email"));
+            Order order = orderService.timDonHang(orderId);
+            if (order != null && order.getDeposit() != null) {
+                String stage = ApiUtil.str(body, "stage");
+                boolean remaining = "REMAINING".equalsIgnoreCase(stage);
+                if (!remaining && stage != null && !"DEPOSIT".equalsIgnoreCase(stage)) {
+                    ApiUtil.error(resp, 400, "Invalid collection stage");
+                    return;
+                }
+                try {
+                    paymentService.confirmCollectionStage(orderId, remaining, changedBy);
+                } catch (IllegalStateException e) {
+                    ApiUtil.error(resp, 409, e.getMessage());
+                    return;
+                }
+            } else {
+                paymentService.xuLyThanhToan(payment.getPaymentId());
+            }
         }
-
         ApiUtil.ok(resp, toMap(orderService.timDonHang(orderId), paymentService.getThanhToanTheoDonHang(orderId)));
     }
 
@@ -98,16 +119,34 @@ public class AdminPaymentServlet extends HttpServlet {
 
     private Map<String, Object> toMap(Order order, Payment payment) {
         Map<String, Object> map = new LinkedHashMap<>();
+        Deposit deposit = order.getDeposit();
+        BigDecimal total = order.getTotalAmount() == null ? BigDecimal.ZERO : order.getTotalAmount();
+        BigDecimal depositAmount = deposit == null || deposit.getAmount() == null
+                ? BigDecimal.ZERO : deposit.getAmount();
+        BigDecimal paymentAmount = payment == null || payment.getAmount() == null
+                ? BigDecimal.ZERO : payment.getAmount();
+        PaymentStatus paymentStatus = payment == null || payment.getPaymentStatus() == null
+                ? PaymentStatus.PENDING : payment.getPaymentStatus();
+        boolean closed = order.getOrderStatus() == OrderStatus.CANCELLED
+                || paymentStatus == PaymentStatus.REFUNDED;
+        BigDecimal collected = paymentStatus == PaymentStatus.COMPLETED ? paymentAmount : BigDecimal.ZERO;
+        BigDecimal outstanding = closed ? BigDecimal.ZERO : total.subtract(collected).max(BigDecimal.ZERO);
+
         map.put("id", payment == null ? null : payment.getPaymentId());
         map.put("orderId", order.getOrderId());
         map.put("orderStatus", order.getOrderStatus() == null ? null : order.getOrderStatus().name());
-        map.put("method", (payment == null || payment.getPaymentMethod() == null)
+        map.put("method", payment == null || payment.getPaymentMethod() == null
                 ? null : payment.getPaymentMethod().name());
-        map.put("amount", payment == null ? order.getTotalAmount() : payment.getAmount());
-        map.put("status", (payment == null || payment.getPaymentStatus() == null)
-                ? PaymentStatus.PENDING.name() : payment.getPaymentStatus().name());
+        map.put("amount", payment == null ? total : paymentAmount);
+        map.put("status", paymentStatus.name());
         map.put("paidAt", payment == null ? null : payment.getPaymentDate());
-        map.put("customerName", order.getUser() == null ? "Khách lẻ" : order.getUser().getFullName());
+        map.put("customerName", order.getUser() == null ? "Kh\u00e1ch l\u1ebb" : order.getUser().getFullName());
+        map.put("deposit", deposit != null);
+        map.put("fullyPaid", paymentStatus == PaymentStatus.COMPLETED && paymentAmount.compareTo(total) >= 0);
+        map.put("depositAmount", depositAmount);
+        map.put("remainingAmount", total.subtract(depositAmount).max(BigDecimal.ZERO));
+        map.put("outstandingAmount", outstanding);
         return map;
     }
+
 }

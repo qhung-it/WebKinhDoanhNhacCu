@@ -6,6 +6,8 @@ import model.OrderStatus;
 import model.dao.intf.OrderDAO;
 import model.entity.Order;
 import model.entity.OrderLineItem;
+import model.entity.Payment;
+import model.entity.Deposit;
 import model.entity.Product;
 import model.util.JpaUtil;
 
@@ -48,6 +50,33 @@ public class OrderDAOImpl implements OrderDAO {
         } finally {
             em.close();
         }
+    }
+
+    @Override
+    public boolean save(Order order, Payment payment, Deposit deposit) {
+        EntityManager em = JpaUtil.getEntityManagerFactory().createEntityManager();
+        try {
+            em.getTransaction().begin();
+            for (OrderLineItem item : order.getOrderLineItems()) {
+                Product product = em.find(Product.class, item.getProduct().getProductId(),
+                        LockModeType.PESSIMISTIC_WRITE);
+                if (product == null || item.getQuantity() <= 0 || product.getQuantity() < item.getQuantity())
+                    throw new IllegalStateException("Insufficient product stock");
+                product.setQuantity(product.getQuantity() - item.getQuantity());
+                item.setProduct(product);
+            }
+            if (payment != null) { payment.setOrder(order); order.setPayment(payment); }
+            if (deposit != null) { deposit.setOrder(order); order.setDeposit(deposit); }
+            em.persist(order);
+            if (payment != null) em.persist(payment);
+            if (deposit != null) em.persist(deposit);
+            em.getTransaction().commit();
+            return true;
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            e.printStackTrace();
+            return false;
+        } finally { em.close(); }
     }
 
     @Override
@@ -115,7 +144,7 @@ public class OrderDAOImpl implements OrderDAO {
             Order order = em.createQuery(
                     "SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.user " +
                             "LEFT JOIN FETCH o.orderLineItems li LEFT JOIN FETCH li.product " +
-                            "WHERE o.orderId = :orderId", Order.class)
+                            "LEFT JOIN FETCH o.deposit WHERE o.orderId = :orderId", Order.class)
                     .setParameter("orderId", orderId).getResultStream().findFirst().orElse(null);
             if (order != null) order.getHistory().size();
             return order;
@@ -133,7 +162,7 @@ public class OrderDAOImpl implements OrderDAO {
             List<Order> orders = em.createQuery(
                             "SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.user " +
                                     "LEFT JOIN FETCH o.orderLineItems li LEFT JOIN FETCH li.product " +
-                                    "WHERE o.user.userId = :userId",
+                                    "LEFT JOIN FETCH o.deposit WHERE o.user.userId = :userId",
                             Order.class
                     )
                     .setParameter("userId", userId)
@@ -174,7 +203,8 @@ public class OrderDAOImpl implements OrderDAO {
         try {
             List<Order> orders = em.createQuery(
                     "SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.user " +
-                            "LEFT JOIN FETCH o.orderLineItems li LEFT JOIN FETCH li.product",
+                            "LEFT JOIN FETCH o.orderLineItems li LEFT JOIN FETCH li.product " +
+                            "LEFT JOIN FETCH o.deposit",
                     Order.class).getResultList();
             orders.forEach(o -> o.getHistory().size());
             return orders;

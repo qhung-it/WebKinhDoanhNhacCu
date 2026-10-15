@@ -61,7 +61,7 @@ function confirmBox(msg, onYes) {
 }
 const badge = (txt, cls) => '<span class="badge b-' + cls + '">' + esc(txt) + '</span>';
 const orderBadge = s => badge(s, { 'Đang xử lý': 'warn', 'Đã xác nhận': 'info', 'Đang giao': 'p', 'Hoàn thành': 'ok', 'Đã hủy': 'bad' }[s] || 'mute');
-const payBadge = s => badge(s, { 'Chưa thanh toán': 'warn', 'Đã thanh toán': 'ok', 'Đã hoàn tiền': 'info' }[s] || 'mute');
+const payBadge = s => badge(s, { 'Ch\u01b0a thanh to\u00e1n': 'warn', '\u0110\u00e3 thanh to\u00e1n': 'ok', '\u0110\u00e3 \u0111\u1eb7t c\u1ecdc': 'info', '\u0110\u00e3 ho\u00e0n ti\u1ec1n': 'info' }[s] || 'mute');
 const empty = (icon, text) => '<div class="empty"><i class="fas ' + icon + '"></i>' + text + '</div>';
 function pager(list, page, per) { const pages = Math.max(1, Math.ceil(list.length / per)); page = Math.min(page, pages); return { items: list.slice((page - 1) * per, page * per), page, pages }; }
 function pagerHTML(pg) { if (pg.pages <= 1) return ''; let h = '<div class="toolbar" style="justify-content:center;margin:16px 0 0">'; for (let i = 1; i <= pg.pages; i++) h += '<button class="btn btn-s ' + (i === pg.page ? 'btn-p' : 'btn-o') + '" data-pg="' + i + '">' + i + '</button>'; return h + '</div>'; }
@@ -191,16 +191,18 @@ PAGES.stats = v => {
 };
 PAGES.orders = v => {
   let q = '', st = '', page = 1, orders = [];
-  const statusName = { PROCESSING: 'Đang xử lý', CONFIRMED: 'Đã xác nhận', SHIPPING: 'Đang giao', COMPLETED: 'Hoàn thành', CANCELLED: 'Đã hủy' };
+  const statusName = { PROCESSING: 'Đang xử lý', CONFIRMED: 'Đã xác nhận', SHIPPING: 'Đang giao', DELIVERED: '\u0110\u00e3 giao - ch\u1edd thu', COMPLETED: 'Hoàn thành', CANCELLED: 'Đã hủy' };
   const payMethodName = { CASH: 'Tiền mặt (COD)', E_WALLET: 'Ví điện tử' };
-  const payStatusName = { PENDING: 'Chưa thanh toán', COMPLETED: 'Đã thanh toán', FAILED: 'Thanh toán thất bại', REFUNDED: 'Đã hoàn tiền' };
+  const payStatusName = { PENDING: 'Ch\u01b0a thanh to\u00e1n', COMPLETED: '\u0110\u00e3 thanh to\u00e1n', DEPOSITED: '\u0110\u00e3 \u0111\u1eb7t c\u1ecdc', FAILED: 'Thanh to\u00e1n th\u1ea5t b\u1ea1i', REFUNDED: '\u0110\u00e3 ho\u00e0n ti\u1ec1n' };
   const reload = async () => { try { orders = await api('orders'); draw(); } catch (e) { $('#odBody').innerHTML = '<div class="card">' + empty('fa-circle-exclamation', 'Không tải được đơn hàng') + '</div>'; } };
   const updateStatus = async (orderId, status) => {
     try { await api('orders/' + encodeURIComponent(orderId) + '/status', 'PATCH', { status }); log('Cập nhật đơn ' + orderId, statusName[status]); toast('Đã cập nhật trạng thái'); await reload(); }
     catch (e) {}
   };
   const detail = order => {
-    const next = { PROCESSING: 'CONFIRMED', CONFIRMED: 'SHIPPING', SHIPPING: 'COMPLETED' }[order.status];
+    const next = order.depositAmount > 0
+      ? ({ PROCESSING: 'CONFIRMED', SHIPPING: 'DELIVERED' }[order.status])
+      : ({ PROCESSING: 'CONFIRMED', CONFIRMED: 'SHIPPING', SHIPPING: 'COMPLETED' }[order.status]);
     const history = order.history || [];
     const body = '<div class="grid g2"><div><h4>Khách hàng</h4><dl class="kv"><dt>Họ tên</dt><dd>' + esc(order.customerName || 'Khách lẻ') + '</dd><dt>Điện thoại</dt><dd>' + esc(order.customerPhone || '-') + '</dd><dt>Email</dt><dd>' + esc(order.customerEmail || '-') + '</dd><dt>Địa chỉ</dt><dd>' + esc(order.address || '-') + '</dd><dt>Ghi chú</dt><dd>' + esc(order.note || '-') + '</dd></dl></div><div><h4>Đơn hàng</h4><dl class="kv"><dt>Mã đơn</dt><dd>#' + esc(order.id) + '</dd><dt>Ngày đặt</dt><dd>' + dt(order.createdAt) + '</dd><dt>Trạng thái</dt><dd>' + orderBadge(statusName[order.status] || order.status) + '</dd><dt>Thanh toán</dt><dd>' + esc(payMethodName[order.payMethod] || order.payMethod || '-') + ' · ' + payBadge(payStatusName[order.payStatus] || order.payStatus || '') + '</dd></dl></div></div>' +
       '<div class="tbl-wrap" style="margin-top:16px"><table class="tbl"><tr><th>Sản phẩm</th><th class="num">Đơn giá</th><th class="num">SL</th><th class="num">Thành tiền</th></tr>' + (order.items || []).map(i => '<tr><td>' + esc(i.name) + '</td><td class="num">' + fmt(i.price) + '</td><td class="num">' + i.qty + '</td><td class="num">' + fmt(Number(i.price) * Number(i.qty)) + '</td></tr>').join('') + '</table></div>' +
@@ -231,27 +233,29 @@ PAGES.orders = v => {
 PAGES.payments = v => {
   let st = '', payments = [];
   const statusName = { PENDING: 'Chưa thanh toán', COMPLETED: 'Đã thanh toán', FAILED: 'Thanh toán thất bại', REFUNDED: 'Đã hoàn tiền' };
-  const orderStatusName = { PROCESSING: 'Đang xử lý', CONFIRMED: 'Đã xác nhận', SHIPPING: 'Đang giao', COMPLETED: 'Hoàn thành', CANCELLED: 'Đã hủy' };
+  const orderStatusName = { PROCESSING: 'Đang xử lý', CONFIRMED: 'Đã xác nhận', SHIPPING: 'Đang giao', DELIVERED: '\u0110\u00e3 giao - ch\u1edd thu', COMPLETED: 'Hoàn thành', CANCELLED: 'Đã hủy' };
   const methodName = { CASH: 'Tiền mặt (COD)', E_WALLET: 'Ví điện tử' };
   const draw = () => {
-    const list = payments.filter(p => !st || p.status === st);
-    const amountOf = status => payments.filter(p => p.status === status).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const list = payments.filter(p => !st || (st === 'PENDING' ? Number(p.outstandingAmount || 0) > 0 : p.status === st));
+    const amountOf = status => status === 'PENDING'
+      ? payments.reduce((sum, p) => sum + Number(p.outstandingAmount || 0), 0)
+      : payments.filter(p => p.status === status).reduce((sum, p) => sum + Number(p.amount || 0), 0);
     $('#pyBody').innerHTML = '<div class="grid g3" style="margin-bottom:16px"><div class="card kpi"><div class="ic" style="background:var(--ok)"><i class="fas fa-check"></i></div><div><small>Đã thu</small><b>' + fmt(amountOf('COMPLETED')) + '</b></div></div><div class="card kpi"><div class="ic" style="background:var(--warn)"><i class="fas fa-hourglass-half"></i></div><div><small>Chờ thu</small><b>' + fmt(amountOf('PENDING')) + '</b></div></div><div class="card kpi"><div class="ic" style="background:var(--info)"><i class="fas fa-rotate-left"></i></div><div><small>Đã hoàn tiền</small><b>' + fmt(amountOf('REFUNDED')) + '</b></div></div></div>' +
-      (list.length ? '<div class="tbl-wrap"><table class="tbl"><tr><th>Mã giao dịch</th><th>Đơn hàng</th><th>Phương thức</th><th class="num">Số tiền</th><th>Trạng thái</th><th></th></tr>' + list.map(p => '<tr><td>' + esc(p.id || '-') + '</td><td>#' + esc(p.orderId) + ' ' + orderBadge(orderStatusName[p.orderStatus] || p.orderStatus || '') + (p.customerName ? '<small>' + esc(p.customerName) + '</small>' : '') + '</td><td>' + esc(methodName[p.method] || p.method || '-') + '</td><td class="num"><b>' + fmt(p.amount) + '</b></td><td>' + payBadge(statusName[p.status] || p.status) + '</td><td class="act">' +
-        (p.status === 'PENDING' ? '<button class="btn btn-ok btn-s" data-paid="' + esc(p.orderId) + '">Xác nhận đã thu</button>' : '') + (p.status === 'COMPLETED' ? '<button class="btn btn-d btn-s" data-refund="' + esc(p.orderId) + '">Hoàn tiền</button>' : '') + '</td></tr>').join('') + '</table></div>' : '<div class="card">' + empty('fa-credit-card', 'Chưa có giao dịch thanh toán') + '</div>');
-    $$('[data-paid]', v).forEach(b => b.onclick = async () => updatePayment(b.dataset.paid, 'COMPLETED'));
+      (list.length ? '<div class="tbl-wrap"><table class="tbl"><tr><th>Mã giao dịch</th><th>Đơn hàng</th><th>Phương thức</th><th class="num">Số tiền</th><th>Trạng thái</th><th></th></tr>' + list.map(p => '<tr><td>' + esc(p.id || '-') + '</td><td>#' + esc(p.orderId) + ' ' + orderBadge(orderStatusName[p.orderStatus] || p.orderStatus || '') + (p.customerName ? '<small>' + esc(p.customerName) + '</small>' : '') + '</td><td>' + esc(methodName[p.method] || p.method || '-') + '</td><td class="num"><b>' + fmt(p.amount) + '</b>' + (p.deposit ? (p.status === 'COMPLETED' ? '<small>\u0110\u00e3 thu c\u1ecdc ban \u0111\u1ea7u: ' + fmt(p.depositAmount) + '</small>' : '<small>Ti\u1ec1n c\u1ecdc c\u1ea7n thu: ' + fmt(p.depositAmount) + '</small>') : '') + (Number(p.outstandingAmount || 0) > 0 ? '<small>C\u00f2n ph\u1ea3i thu: ' + fmt(p.outstandingAmount) + '</small>' : '') + '</td><td>' + payBadge(p.deposit && p.status === 'COMPLETED' && !p.fullyPaid ? '\u0110\u00e3 \u0111\u1eb7t c\u1ecdc' : (statusName[p.status] || p.status)) + '</td><td class="act">' +
+        (p.deposit && p.status === 'PENDING' && p.orderStatus === 'CONFIRMED' ? '<button class="btn btn-ok btn-s" data-paid="' + esc(p.orderId) + '" data-stage="DEPOSIT">X\u00e1c nh\u1eadn thu c\u1ecdc</button>' : (!p.deposit && p.status === 'PENDING' ? '<button class="btn btn-ok btn-s" data-paid="' + esc(p.orderId) + '">X\u00e1c nh\u1eadn \u0111\u00e3 thu</button>' : '')) + (p.deposit && p.status === 'COMPLETED' && p.orderStatus === 'DELIVERED' ? '<button class="btn btn-ok btn-s" data-paid="' + esc(p.orderId) + '" data-stage="REMAINING">X\u00e1c nh\u1eadn thu ph\u1ea7n c\u00f2n l\u1ea1i</button>' : '') + (p.status === 'COMPLETED' ? '<button class="btn btn-d btn-s" data-refund="' + esc(p.orderId) + '">Ho\u00e0n ti\u1ec1n</button>' : '') + '</td></tr>').join('') + '</table></div>' : '<div class="card">' + empty('fa-credit-card', 'Chưa có giao dịch thanh toán') + '</div>');
+    $$('[data-paid]', v).forEach(b => b.onclick = async () => updatePayment(b.dataset.paid, 'COMPLETED', b.dataset.stage || ''));
     $$('[data-refund]', v).forEach(b => b.onclick = () => confirmBox('Hoàn tiền đơn #' + b.dataset.refund + '?', async () => updatePayment(b.dataset.refund, 'REFUNDED')));
   };
-  const updatePayment = async (orderId, status) => {
+  const updatePayment = async (orderId, status, stage) => {
     try {
-      await api('payments/' + encodeURIComponent(orderId) + '/status', 'PATCH', { status });
-      log(status === 'REFUNDED' ? 'Hoàn tiền' : 'Xác nhận thu tiền', orderId);
-      toast(status === 'REFUNDED' ? 'Đã hoàn tiền' : 'Đã xác nhận thanh toán');
+      await api('payments/' + encodeURIComponent(orderId) + '/status', 'PATCH', { status, stage });
+      log(status === 'REFUNDED' ? 'Ho\u00e0n ti\u1ec1n' : (stage === 'DEPOSIT' ? 'X\u00e1c nh\u1eadn thu c\u1ecdc' : stage === 'REMAINING' ? 'X\u00e1c nh\u1eadn thu ph\u1ea7n c\u00f2n l\u1ea1i' : 'X\u00e1c nh\u1eadn thu ti\u1ec1n'), orderId);
+      toast(status === 'REFUNDED' ? '\u0110\u00e3 ho\u00e0n ti\u1ec1n' : (stage === 'DEPOSIT' ? '\u0110\u00e3 thu c\u1ecdc, \u0111\u01a1n chuy\u1ec3n sang \u0111ang giao' : stage === 'REMAINING' ? '\u0110\u00e3 thu \u0111\u1ee7, \u0111\u01a1n ho\u00e0n t\u1ea5t' : '\u0110\u00e3 x\u00e1c nh\u1eadn thanh to\u00e1n'));
       payments = await api('payments');
       draw();
     } catch (e) { /* api() đã hiển thị lỗi */ }
   };
-  v.innerHTML = '<div class="toolbar"><select class="select" id="pySt"><option value="">Tất cả giao dịch</option><option value="PENDING">Chưa thanh toán</option><option value="COMPLETED">Đã thanh toán</option><option value="FAILED">Thất bại</option><option value="REFUNDED">Đã hoàn tiền</option></select></div><div id="pyBody">' + empty('fa-spinner fa-spin', 'Đang tải giao dịch...') + '</div>';
+  v.innerHTML = '<div class="toolbar"><select class="select" id="pySt"><option value="">Tất cả giao dịch</option><option value="PENDING">C&#242;n ph&#7843;i thu</option><option value="COMPLETED">Đã thanh toán</option><option value="FAILED">Thất bại</option><option value="REFUNDED">Đã hoàn tiền</option></select></div><div id="pyBody">' + empty('fa-spinner fa-spin', 'Đang tải giao dịch...') + '</div>';
   $('#pySt').onchange = e => { st = e.target.value; draw(); };
   api('payments').then(data => { payments = Array.isArray(data) ? data : []; draw(); }).catch(() => { $('#pyBody').innerHTML = '<div class="card">' + empty('fa-circle-exclamation', 'Không tải được giao dịch') + '</div>'; });
 };

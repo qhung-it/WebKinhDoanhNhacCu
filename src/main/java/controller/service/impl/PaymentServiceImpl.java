@@ -140,6 +140,12 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    public Payment confirmCollectionStage(String orderId, boolean remainingBalance, String changedBy) {
+        if (orderId == null || orderId.trim().isEmpty()) throw new IllegalArgumentException("Missing order id");
+        return paymentDAO.confirmCollectionStage(orderId, remainingBalance, changedBy);
+    }
+
+    @Override
     public void hoanTien(String paymentId) {
 
         if (paymentId == null ||

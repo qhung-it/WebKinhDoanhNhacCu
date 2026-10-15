@@ -6,6 +6,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import model.entity.Order;
+import model.entity.Deposit;
 import model.entity.User;
 
 import java.io.IOException;
@@ -75,6 +76,13 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
                 row.put("orderDate", order.getOrderDate() == null ? null : order.getOrderDate().toString());
                 row.put("status", order.getOrderStatus());
                 row.put("totalAmount", order.getTotalAmount());
+                Deposit deposit = order.getDeposit();
+                java.math.BigDecimal depositAmount = deposit == null || deposit.getAmount() == null
+                        ? java.math.BigDecimal.ZERO : deposit.getAmount();
+                row.put("depositAmount", depositAmount);
+                row.put("depositStatus", deposit == null || deposit.getDepositStatus() == null
+                        ? null : deposit.getDepositStatus().name());
+                row.put("remainingAmount", order.getTotalAmount().subtract(depositAmount).max(java.math.BigDecimal.ZERO));
                 result.add(row);
             }
             send(response, HttpServletResponse.SC_OK, result);

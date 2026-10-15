@@ -1332,7 +1332,7 @@ function userSpend(email) {
 function getTier(email) {
   const spend = userSpend(email);
   const list = TIERS.slice().sort((a, b) => a.min - b.min);
-  let t = list[0];
+  let t = list[0] || { key: "member", name: "\u0054h\u00e0nh vi\u00ean", min: 0, color: "var(--primary)" };
   list.forEach((x) => {
     if (spend >= x.min) t = x;
   });
@@ -1575,6 +1575,13 @@ function initCheckout() {
     return;
   }
   const t = calcTotals();
+  const depositEligible = Number(t.total) >= 100000000;
+  const depositAmount = Math.round(Number(t.total) * 0.30);
+  const depositBlock = depositEligible
+    ? '<div class="deposit-box"><strong><i class="fas fa-hand-holding-dollar"></i> L&#7921;a ch&#7885;n &#273;&#7863;t c&#7885;c</strong>' +
+      '<label class="pay-option"><input type="radio" name="deposit" value="full" checked><i class="fas fa-circle-check"></i><div><strong>Thanh to&#225;n to&#224;n b&#7897;</strong><span>' + fmt(t.total) + '</span></div></label>' +
+      '<label class="pay-option"><input type="radio" name="deposit" value="deposit"><i class="fas fa-piggy-bank"></i><div><strong>&#272;&#7863;t c&#7885;c 30% = ' + fmt(depositAmount) + '</strong><span>C&#242;n l&#7841;i ' + fmt(Number(t.total) - depositAmount) + ' thanh to&#225;n khi nh&#7853;n h&#224;ng</span></div></label></div>'
+    : "";
   root.innerHTML =
     '<form id="checkoutForm" class="checkout-layout" novalidate><div class="checkout-main">' +
     '<div class="summary-box"><h3><i class="fas fa-map-marker-alt"></i> Thông tin nhận hàng</h3>' +
@@ -1621,6 +1628,7 @@ function initCheckout() {
           "</span></div></label>",
       )
       .join("") +
+    depositBlock +
     "</div>" +
     "</div><div>" +
     '<div class="summary-box"><h3>Đơn hàng của bạn</h3>' +
@@ -1676,10 +1684,13 @@ function initCheckout() {
     }
     if (!getUser())
       return showToast("Vui lòng đăng nhập trước khi đặt hàng", "error");
+    const depositSelected =
+      $('input[name="deposit"]:checked')?.value === "deposit";
     try {
       const order = await apiRequest("/orders", "POST", {
         address: addr,
         paymentMethod: $('input[name="pay"]:checked').value,
+        deposit: depositSelected ? "true" : "false",
         couponCode: calcTotals().code,
         items: JSON.stringify(cart.map((item) => {
           const product = byId(item.id);
@@ -1727,9 +1738,15 @@ function initOrderSuccess() {
   }
   const methods = { cod: "Thanh toán khi nhận hàng (COD)", bank: "Chuyển khoản ngân hàng", momo: "Ví điện tử" };
   const items = Array.isArray(order.items) ? order.items : [];
+  const depositInfo = Number(order.depositAmount || 0) > 0
+    ? '<div class="summary-box" style="margin-top:20px"><h3>Th&#244;ng tin &#273;&#7863;t c&#7885;c</h3><div class="sum-row"><span>Ti&#7873;n &#273;&#7863;t c&#7885;c (30%)</span><strong>' +
+      fmt(order.depositAmount) + '</strong></div><div class="sum-row"><span>Tr&#7841;ng th&#225;i</span><strong>' +
+      esc(order.depositStatus || "PENDING") + '</strong></div><div class="sum-row"><span>C&#242;n l&#7841;i khi nh&#7853;n h&#224;ng</span><strong>' +
+      fmt(order.remainingAmount || 0) + '</strong></div></div>'
+    : "";
   root.innerHTML =
     '<div class="checkout-layout"><section class="checkout-main"><div class="summary-box" style="text-align:center;padding:36px 24px"><div style="font-size:52px;color:var(--primary)"><i class="fas fa-circle-check"></i></div><h1>Đặt hàng thành công</h1><p>Soundora đã nhận được đơn hàng của bạn.</p><p><strong>Mã đơn hàng: ' + esc(order.orderId || "") + '</strong></p><span class="order-status">' + esc(order.status || "PENDING") + '</span></div>' +
-    '<div class="summary-box" style="margin-top:20px"><h3>Thông tin nhận hàng</h3><p><strong>' + esc(order.customerName || "") + '</strong></p><p>' + esc(order.phone || "") + '</p><p>' + esc(order.shippingAddress || "") + '</p><p>Phương thức: ' + esc(methods[order.paymentMethod] || order.paymentMethod || "") + '</p><p>Ngày đặt: ' + esc(order.orderDate || "") + '</p></div></section>' +
+    '<div class="summary-box" style="margin-top:20px"><h3>Thông tin nhận hàng</h3><p><strong>' + esc(order.customerName || "") + '</strong></p><p>' + esc(order.phone || "") + '</p><p>' + esc(order.shippingAddress || "") + '</p><p>Phương thức: ' + esc(methods[order.paymentMethod] || order.paymentMethod || "") + '</p><p>Ngày đặt: ' + esc(order.orderDate || "") + '</p></div>' + depositInfo + '</section>' +
     '<aside><div class="summary-box"><h3>Chi tiết đơn hàng</h3>' +
     items.map((item) => '<div class="sum-row"><span>' + esc(item.name) + ' × ' + esc(item.quantity) + '</span><strong>' + fmt(Number(item.price) * Number(item.quantity)) + '</strong></div>').join("") +
     '<div class="sum-row"><span>Tạm tính</span><strong>' + fmt(order.subtotal || 0) + '</strong></div><div class="sum-row"><span>Giảm giá</span><strong>−' + fmt(order.discount || 0) + '</strong></div><div class="sum-row"><span>Phí vận chuyển</span><strong>' + fmt(order.shippingFee || 0) + '</strong></div><div class="sum-row total"><span>Tổng cộng</span><strong>' + fmt(order.totalAmount || 0) + '</strong></div></div><a class="btn btn-primary" href="products.html" style="width:100%;justify-content:center;margin-top:16px">Tiếp tục mua sắm</a><a class="btn btn-outline" href="login.html" style="width:100%;justify-content:center;margin-top:10px">Xem tài khoản</a></aside></div>';
@@ -2088,13 +2105,18 @@ function initAuth() {
                 '<div class="order-card"><div class="order-head"><strong>#' +
                 esc(o.orderId) +
                 '</strong><span class="order-status">' +
-                esc(o.status) +
+                esc(({ PROCESSING: '\u0110ang x\u1eed l\u00fd', CONFIRMED: '\u0110\u00e3 x\u00e1c nh\u1eadn', SHIPPING: '\u0110ang giao', DELIVERED: '\u0110\u00e3 giao - ch\u1edd thanh to\u00e1n', COMPLETED: 'Ho\u00e0n th\u00e0nh', CANCELLED: '\u0110\u00e3 h\u1ee7y' })[o.status] || o.status) +
                 "</span><small>" +
                 esc(o.orderDate || "") +
                 "</small></div>" +
                 '<div class="sum-row total"><span>Tổng cộng</span><strong>' +
                 fmt(o.totalAmount || 0) +
-                "</strong></div></div>",
+                "</strong></div>" +
+                (Number(o.depositAmount || 0) > 0
+                  ? '<small class="text-muted">&#272;&#7863;t c&#7885;c: ' + fmt(o.depositAmount) +
+                    ' &middot; C&#242;n l&#7841;i: ' + fmt(o.remainingAmount || 0) + '</small>'
+                  : "") +
+                "</div>",
             )
             .join("")
         : '<p class="text-muted">Bạn chưa có đơn hàng nào.</p>') +
