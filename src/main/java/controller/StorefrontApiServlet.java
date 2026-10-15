@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import controller.service.impl.BrandServiceImpl;
+import controller.service.impl.AccountEmailNotificationService;
 import controller.service.impl.CartServiceImpl;
 import controller.service.impl.CategoryServiceImpl;
 import controller.service.impl.ContactMessageServiceImpl;
@@ -12,6 +13,7 @@ import controller.service.impl.DepositServiceImpl;
 import controller.service.impl.NewsArticleServiceImpl;
 import controller.service.impl.OrderServiceImpl;
 import controller.service.impl.PaymentServiceImpl;
+import controller.service.impl.PaymentReceiptEmailService;
 import controller.service.impl.ProductServiceImpl;
 import controller.service.impl.PromotionServiceImpl;
 import controller.service.impl.ReviewServiceImpl;
@@ -57,9 +59,11 @@ public class StorefrontApiServlet extends HttpServlet {
     private final PromotionService promotionService = new PromotionServiceImpl();
     private final ReviewService reviewService = new ReviewServiceImpl();
     private final UserService userService = new UserServiceImpl();
+    private final AccountEmailNotificationService accountEmailService = new AccountEmailNotificationService();
     private final CartService cartService = new CartServiceImpl();
     private final OrderService orderService = new OrderServiceImpl();
     private final PaymentService paymentService = new PaymentServiceImpl();
+    private final PaymentReceiptEmailService receiptEmailService = new PaymentReceiptEmailService();
     private final DepositService depositService = new DepositServiceImpl();
     private final ContactMessageService contactService = new ContactMessageServiceImpl();
     private final NewsArticleService newsService = new NewsArticleServiceImpl();
@@ -208,6 +212,7 @@ public class StorefrontApiServlet extends HttpServlet {
                 return;
             }
             req.getSession(true).setAttribute("storeUserId", user.getUserId());
+            accountEmailService.sendLoginNotification(user);
             ApiUtil.ok(resp, userMap(user));
         } else if (p.equals("/auth/register")) {
             String name = ApiUtil.str(body, "name");
@@ -235,6 +240,7 @@ public class StorefrontApiServlet extends HttpServlet {
 
             userService.dangKy(user);
             req.getSession(true).setAttribute("storeUserId", user.getUserId());
+            accountEmailService.sendWelcome(user);
             ApiUtil.json(resp, 201, userMap(user));
         } else if (p.equals("/auth/logout")) {
             HttpSession session = req.getSession(false);
@@ -425,6 +431,7 @@ public class StorefrontApiServlet extends HttpServlet {
                 payment.setAmount(order.getTotalAmount());
                 payment.setPaymentMethod("E_WALLET".equalsIgnoreCase(rawMethod) ? PaymentMethod.E_WALLET : PaymentMethod.CASH);
                 paymentService.taoThanhToan(payment);
+                receiptEmailService.sendOrderConfirmation(order.getOrderId());
 
                 Order savedOrder = orderService.timDonHang(order.getOrderId());
                 if (savedOrder.getTotalAmount().compareTo(new BigDecimal("100000000")) >= 0) {

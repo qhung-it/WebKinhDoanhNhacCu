@@ -1,5 +1,6 @@
 package controller.User;
 
+import controller.service.impl.AccountEmailNotificationService;
 import controller.service.impl.OrderServiceImpl;
 import controller.service.impl.UserServiceImpl;
 import jakarta.servlet.annotation.WebServlet;
@@ -51,6 +52,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
 
     private final UserServiceImpl service = new UserServiceImpl();
     private final OrderServiceImpl orders = new OrderServiceImpl();
+    private final AccountEmailNotificationService accountEmailService = new AccountEmailNotificationService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -145,8 +147,9 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
                         new ApiMessage("Kh?ng th? t?o t?i kho?n"));
                 return;
             }
-            send(response, HttpServletResponse.SC_CREATED,
-                    new ApiMessage("ÄÄƒng kĂ½ thĂ nh cĂ´ng"));
+            request.getSession(true).setAttribute("user", user);
+            accountEmailService.sendWelcome(user);
+            send(response, HttpServletResponse.SC_CREATED, profile(user));
         } catch (RuntimeException exception) {
             send(response, HttpServletResponse.SC_CONFLICT,
                     new ApiMessage("Email Ä‘Ă£ Ä‘Æ°á»£c sá»­ dá»¥ng hoáº·c dá»¯ liá»‡u khĂ´ng há»£p lá»‡"));
@@ -163,6 +166,7 @@ public class UserServlet extends jakarta.servlet.http.HttpServlet {
             return;
         }
         request.getSession(true).setAttribute("user", user);
+        accountEmailService.sendLoginNotification(user);
         send(response, HttpServletResponse.SC_OK, profile(user));
     }
 

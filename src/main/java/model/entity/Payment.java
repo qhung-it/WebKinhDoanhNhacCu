@@ -32,6 +32,9 @@ public class Payment {
     @JoinColumn(name = "order_id", nullable = false, unique = true)
     private Order order;
 
+    @Column(name = "receipt_sent")
+    private Boolean receiptSent = false;
+
     public String getPaymentId() {
         return paymentId;
     }
@@ -78,5 +81,13 @@ public class Payment {
 
     public void setOrder(Order order) {
         this.order = order;
+    }
+
+    public boolean isReceiptSent() {
+        return Boolean.TRUE.equals(receiptSent);
+    }
+
+    public void setReceiptSent(boolean receiptSent) {
+        this.receiptSent = receiptSent;
     }
 }

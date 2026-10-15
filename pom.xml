@@ -71,6 +71,13 @@
           <type>dll</type>
       </dependency>
 
+      <!-- SMTP email receipts -->
+      <dependency>
+          <groupId>org.eclipse.angus</groupId>
+          <artifactId>jakarta.mail</artifactId>
+          <version>2.0.5</version>
+      </dependency>
+
       <!-- Gson: chuyển đổi Java object sang JSON và phân tích JSON -->
       <dependency>
           <groupId>com.google.code.gson</groupId>
