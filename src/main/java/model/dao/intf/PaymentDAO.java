@@ -11,4 +11,6 @@ public interface PaymentDAO {
     Payment findById(String paymentId);
 
     Payment findByOrderId(String orderId);
+
+    Payment confirmCollectionStage(String orderId, boolean remainingBalance, String changedBy);
 }

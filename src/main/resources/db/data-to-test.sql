@@ -5,6 +5,9 @@ USE db_webnhac;
 SET NAMES utf8mb4;
 START TRANSACTION;
 
+ALTER TABLE orders
+    MODIFY COLUMN order_status VARCHAR(20) NOT NULL DEFAULT 'PROCESSING';
+
 -- Catalog seed from the source SQL Server script.
 INSERT INTO category (category_id, category_name, status) VALUES ('guitar', 'Guitar', 1) ON DUPLICATE KEY UPDATE category_name=VALUES(category_name), status=VALUES(status);
 INSERT INTO category (category_id, category_name, status) VALUES ('piano', 'Piano', 1) ON DUPLICATE KEY UPDATE category_name=VALUES(category_name), status=VALUES(status);

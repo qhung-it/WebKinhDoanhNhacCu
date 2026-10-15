@@ -16,4 +16,6 @@ public interface PaymentService {
     Payment getThanhToanTheoDonHang(String orderId);
 
     void hoanTien(String paymentId);
+
+    Payment confirmCollectionStage(String orderId, boolean remainingBalance, String changedBy);
 }

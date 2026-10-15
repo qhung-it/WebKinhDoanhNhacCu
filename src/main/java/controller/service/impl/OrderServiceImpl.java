@@ -5,6 +5,7 @@ import controller.service.impl.InventoryHistoryServiceImpl;
 import controller.service.intf.InventoryHistoryService;
 import model.OrderStatus;
 import model.PaymentStatus;
+import model.PaymentMethod;
 import model.dao.impl.OrderDAOImpl;
 import model.dao.impl.PaymentDAOImpl;
 import model.dao.impl.ProductDAOImpl;
@@ -15,6 +16,7 @@ import model.entity.Order;
 import model.entity.InventoryHistory;
 import model.entity.OrderHistory;
 import model.entity.OrderLineItem;
+import model.entity.Deposit;
 import model.entity.Payment;
 import model.entity.Product;
 
@@ -45,6 +47,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public boolean taoDonHang(Order order) {
+        return taoDonHang(order, null, false);
+    }
+
+    public boolean taoDonHang(Order order, PaymentMethod paymentMethod, boolean depositSelected) {
         if (order == null || order.getOrderLineItems() == null || order.getOrderLineItems().isEmpty())
             throw new IllegalArgumentException("Đơn hàng không có sản phẩm");
 
@@ -77,13 +83,47 @@ public class OrderServiceImpl implements OrderService {
         order.setShippingFee(ship);
         order.setTotalAmount(subtotal.subtract(discount).add(ship).max(BigDecimal.ZERO));
 
+        Payment payment = null;
+        Deposit deposit = null;
+        if (paymentMethod != null) {
+            payment = new Payment();
+            payment.setPaymentId(UUID.randomUUID().toString());
+            payment.setOrder(order);
+            payment.setPaymentMethod(paymentMethod);
+            payment.setPaymentStatus(PaymentStatus.PENDING);
+            payment.setPaymentDate(LocalDateTime.now());
+            BigDecimal paymentAmount = order.getTotalAmount();
+            if (depositSelected) {
+                deposit = new Deposit();
+                deposit.setDepositId(UUID.randomUUID().toString());
+                deposit.setOrder(order);
+                BigDecimal depositAmount = deposit.calculateDeposit();
+                if (depositAmount.signum() <= 0)
+                    throw new IllegalArgumentException("Deposit is available for orders of at least 100,000,000 VND");
+                deposit.setAmount(depositAmount);
+                deposit.setDepositDate(LocalDateTime.now());
+                deposit.setDepositStatus(model.DepositStatus.PENDING);
+                paymentAmount = depositAmount;
+            }
+            if (paymentAmount.signum() <= 0)
+                throw new IllegalArgumentException("Order total must be greater than zero");
+            payment.setAmount(paymentAmount);
+            order.setPayment(payment);
+            if (deposit != null) order.setDeposit(deposit);
+        } else if (depositSelected) {
+            throw new IllegalArgumentException("Payment method is required");
+        }
+
         if (order.getOrderDate() == null) order.setOrderDate(LocalDateTime.now());
         order.setOrderStatus(OrderStatus.PROCESSING);
         order.getHistory().add(new OrderHistory(order, OrderStatus.PROCESSING, "Khách hàng"));
 
         boolean orderSaved = false;
         try {
-            if (!orderDAO.save(order)) throw new IllegalStateException("Không lưu được đơn hàng");
+            boolean saved = payment == null
+                    ? orderDAO.save(order)
+                    : orderDAO.save(order, payment, deposit);
+            if (!saved) throw new IllegalStateException("Không lưu được đơn hàng");
             orderSaved = true;
             for (Map.Entry<String, Integer> entry : requestedStock.entrySet()) {
                 Product product = products.get(entry.getKey());
@@ -140,12 +180,21 @@ public class OrderServiceImpl implements OrderService {
                 paymentDAO.update(pay);
             }
         } else {
-            if (FLOW.indexOf(status) != FLOW.indexOf(cur) + 1)
-                throw new IllegalStateException("Chỉ được chuyển sang bước kế tiếp");
+            boolean validTransition;
+            if (o.getDeposit() != null) {
+                validTransition = (cur == OrderStatus.PROCESSING && status == OrderStatus.CONFIRMED)
+                        || (cur == OrderStatus.SHIPPING && status == OrderStatus.DELIVERED);
+            } else {
+                validTransition = FLOW.indexOf(status) == FLOW.indexOf(cur) + 1;
+            }
+            if (!validTransition)
+                throw new IllegalStateException("Invalid order status transition");
             if (status == OrderStatus.COMPLETED && pay != null
                     && pay.getPaymentMethod() != null
                     && ("COD".equalsIgnoreCase(pay.getPaymentMethod().name()) || "CASH".equalsIgnoreCase(pay.getPaymentMethod().name()))
-                    && pay.getPaymentStatus() == PaymentStatus.PENDING) {
+                    && pay.getPaymentStatus() == PaymentStatus.PENDING
+                    && pay.getAmount() != null
+                    && pay.getAmount().compareTo(o.getTotalAmount()) == 0) {
                 pay.setPaymentStatus(PaymentStatus.COMPLETED);
                 pay.setPaymentDate(LocalDateTime.now());
                 paymentDAO.update(pay);

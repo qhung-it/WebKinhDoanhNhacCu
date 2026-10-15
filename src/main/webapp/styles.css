@@ -3206,6 +3206,21 @@ button {
 }
 
 /* ===== Thanh toán ===== */
+.deposit-box {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--accent-orange);
+  border-radius: var(--radius-md);
+  background: #fffaf0;
+}
+.deposit-box > strong {
+  display: block;
+  margin-bottom: 12px;
+  color: #8a5a00;
+}
+.deposit-box .pay-option:last-child {
+  margin-bottom: 0;
+}
 .pay-option {
   display: flex;
   align-items: center;

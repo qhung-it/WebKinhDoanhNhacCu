@@ -25,12 +25,19 @@ public class AdminOrderServlet extends HttpServlet {
     private final PaymentService paymentService = new PaymentServiceImpl();
     private final PaymentReceiptEmailService receiptEmailService = new PaymentReceiptEmailService();
 
-    private String payLabel(Payment p) {
-        if (p == null || p.getPaymentStatus() == null) return "Chưa thanh toán";
-        switch (p.getPaymentStatus()) {
-            case COMPLETED: return "Đã thanh toán";
-            case REFUNDED:  return "Đã hoàn tiền";
-            default:        return "Chưa thanh toán";
+    private String payLabel(Order order, Payment payment) {
+        if (payment == null || payment.getPaymentStatus() == null) return "Ch\u01b0a thanh to\u00e1n";
+        if (payment.getPaymentStatus() == model.PaymentStatus.COMPLETED
+                && order.getDeposit() != null
+                && payment.getAmount() != null
+                && order.getTotalAmount() != null
+                && payment.getAmount().compareTo(order.getTotalAmount()) < 0) {
+            return "DEPOSITED";
+        }
+        switch (payment.getPaymentStatus()) {
+            case COMPLETED: return "\u0110\u00e3 thanh to\u00e1n";
+            case REFUNDED:  return "\u0110\u00e3 ho\u00e0n ti\u1ec1n";
+            default:        return "Ch\u01b0a thanh to\u00e1n";
         }
     }
 
@@ -47,7 +54,13 @@ public class AdminOrderServlet extends HttpServlet {
         m.put("note", o.getNote());
         m.put("payMethod", pay == null || pay.getPaymentMethod() == null
                 ? null : pay.getPaymentMethod().name().toLowerCase());
-        m.put("payStatus", payLabel(pay));
+        Deposit deposit = o.getDeposit();
+        java.math.BigDecimal depositAmount = deposit == null || deposit.getAmount() == null
+                ? java.math.BigDecimal.ZERO : deposit.getAmount();
+        m.put("payStatus", payLabel(o, pay));
+        m.put("depositAmount", depositAmount);
+        m.put("remainingAmount", o.getTotalAmount() == null
+                ? java.math.BigDecimal.ZERO : o.getTotalAmount().subtract(depositAmount).max(java.math.BigDecimal.ZERO));
         m.put("status", o.getOrderStatus() == null ? null : o.getOrderStatus().name());
         m.put("createdAt", o.getOrderDate());
         m.put("subtotal", o.getSubtotal());
