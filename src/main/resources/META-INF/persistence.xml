@@ -33,7 +33,7 @@
             <!-- Local MySQL fallback. DB_URL/DB_USER/DB_PASSWORD override these in JpaUtil. -->
             <property
                     name="jakarta.persistence.jdbc.url"
-                    value="jdbc:mysql://localhost:3306/DB_WebNhac?serverTimezone=UTC&amp;useUnicode=true&amp;characterEncoding=UTF-8"/>
+                    value="jdbc:mysql://localhost:3306/db_webnhac?serverTimezone=UTC&amp;useUnicode=true&amp;characterEncoding=UTF-8"/>
             <property
                     name="jakarta.persistence.jdbc.user"
                     value="root"/>

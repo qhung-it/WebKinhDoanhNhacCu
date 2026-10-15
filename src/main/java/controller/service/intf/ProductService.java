@@ -10,7 +10,7 @@ public interface ProductService {
 
     void suaSanPham(Product product);
 
-    void xoaSanPham(String productId);
+    boolean xoaSanPham(String productId);
 
     Product timSanPham(String productId);
 

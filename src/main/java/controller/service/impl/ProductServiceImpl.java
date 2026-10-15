@@ -88,9 +88,9 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public void xoaSanPham(String productId) {
+    public boolean xoaSanPham(String productId) {
         if (blank(productId)) throw new IllegalArgumentException("Thiếu mã sản phẩm");
-        productDAO.delete(productId);
+        return productDAO.delete(productId);
     }
 
     @Override

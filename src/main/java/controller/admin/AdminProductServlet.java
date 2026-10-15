@@ -159,7 +159,11 @@ public class AdminProductServlet extends HttpServlet {
             return;
         }
 
-        productService.xoaSanPham(id);
+        if (!productService.xoaSanPham(id)) {
+            ApiUtil.error(resp, HttpServletResponse.SC_CONFLICT,
+                    "Không thể xóa sản phẩm vì sản phẩm đang được sử dụng hoặc còn dữ liệu liên quan.");
+            return;
+        }
         ApiUtil.ok(resp, Map.of("ok", true));
     }
 
